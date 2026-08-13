@@ -23,7 +23,7 @@
                 marginTop="70"
                 grow="1"
                 spanCount="1"
-                itemHeight="82"
+                itemHeight="70"
                 wireframe="false"
                 preFetchLine="2"
                 id="home/live/recyclingGrid" />
@@ -33,10 +33,35 @@
                 positionType="absolute"
                 positionRight="0"
                 positionTop="0"
-                width="340"
+                width="520"
                 height="70"
+                axis="row"
                 alignItems="center"
+                justifyContent="flex-end"
                 wireframe="false">
+                <CustomButton
+                        id="home/iptv-settings"
+                        focusable="true"
+                        highlightCornerRadius="8"
+                        hideHighlightBackground="true"
+                        width="170"
+                        height="35"
+                        marginRight="10"
+                        backgroundColor="#2A2D35"
+                        paddingLeft="15"
+                        cornerRadius="12">
+                        <brls:Label
+                                fontSize="14"
+                                textColor="#F5F5F7"
+                                text="M3U / EPG" />
+                        <HintLabel
+                                height="35"
+                                positionType="absolute"
+                                positionRight="15"
+                                fontSize="14"
+                                textColor="#F5F5F7"
+                                text="+" />
+                </CustomButton>
                 <CustomButton
                         id="home/search"
                         focusable="true"

@@ -65,4 +65,5 @@ private:
     BRLS_BIND(RecyclingGrid, recyclingGrid, "home/live/recyclingGrid");
     BRLS_BIND(RecyclingGrid, upRecyclingGrid, "dynamic/up/recyclingGrid");
     BRLS_BIND(CustomButton, searchField, "home/search");
+    BRLS_BIND(CustomButton, iptvSettingsButton, "home/iptv-settings");
 };

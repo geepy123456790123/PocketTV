@@ -26,6 +26,8 @@ public:
 
     void load(std::string url);
 
+    void loadWithDiskCache(std::string url);
+
     static void clear(brls::Image* view);
 
     static void setRequestThreads(size_t num);
@@ -86,6 +88,7 @@ private:
     bool isCancel{};
     brls::Image* imageView;
     std::string imageUrl;
+    std::string diskCachePath;
     Pool::iterator currentIter;
 
     inline static std::unordered_map<brls::Image*, Pool::iterator> requestMap;

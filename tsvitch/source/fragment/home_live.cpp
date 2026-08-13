@@ -50,6 +50,10 @@ std::string programmeText(const tsvitch::EpgProgramme& programme, std::time_t sl
                        formatGuideTime(std::min(programme.stop, slotStop)));
 }
 
+constexpr float GUIDE_SLOT_WIDTH = 250.0f;
+constexpr float GUIDE_SLOT_GAP   = 6.0f;
+constexpr int GUIDE_SLOT_SECONDS = 30 * 60;
+
 }  // namespace
 
 class DynamicGroupChannels : public RecyclingGridItem {
@@ -215,56 +219,56 @@ protected:
 const std::string LiveGuideRowCellXML = R"xml(
 <brls:Box
         width="auto"
-        height="76"
+        height="64"
         focusable="true"
         paddingLeft="10"
         paddingRight="10"
-        paddingTop="6"
-        paddingBottom="6"
+        paddingTop="4"
+        paddingBottom="4"
         alignItems="center"
         backgroundColor="#15171C"
         highlightCornerRadius="14"
         cornerRadius="10">
 
-    <brls:Box width="220" height="60" axis="row" alignItems="center">
+    <brls:Box width="210" height="54" axis="row" alignItems="center">
         <brls:Image
                 id="guide/logo"
                 scalingType="fill"
                 cornerRadius="8"
-                marginRight="12"
-                width="44"
-                height="44"/>
+                marginRight="10"
+                width="40"
+                height="40"/>
         <brls:Label
                 id="guide/heart"
                 positionType="absolute"
-                positionLeft="42"
-                positionTop="6"
-                width="20"
-                height="20"
-                fontSize="16"
+                positionLeft="38"
+                positionTop="4"
+                width="18"
+                height="18"
+                fontSize="15"
                 textColor="#FF375F"
                 text=""/>
-        <brls:Box width="158" height="auto" axis="column">
+        <brls:Box width="154" height="auto" axis="column">
             <brls:Label
                     id="guide/channel"
-                    width="158"
+                    width="154"
                     height="auto"
-                    fontSize="18"
+                    fontSize="16"
                     textColor="#F8FAFC"
                     singleLine="true"/>
             <brls:Label
                     id="guide/group"
-                    width="158"
+                    width="154"
                     height="auto"
-                    fontSize="12"
+                    fontSize="11"
                     textColor="#A7B0BA"
                     singleLine="true"/>
         </brls:Box>
     </brls:Box>
 
-    <brls:Label id="guide/slot0" width="250" height="60" marginLeft="6" fontSize="13" textColor="#EEF2F7" backgroundColor="#20232B" cornerRadius="10"/>
-    <brls:Label id="guide/slot1" width="250" height="60" marginLeft="6" fontSize="13" textColor="#EEF2F7" backgroundColor="#20232B" cornerRadius="10"/>
-    <brls:Label id="guide/slot2" width="250" height="60" marginLeft="6" fontSize="13" textColor="#EEF2F7" backgroundColor="#20232B" cornerRadius="10"/>
+    <brls:Label id="guide/slot0" width="250" height="52" marginLeft="6" fontSize="12" textColor="#EEF2F7" backgroundColor="#20232B" cornerRadius="10"/>
+    <brls:Label id="guide/slot1" width="250" height="52" marginLeft="6" fontSize="12" textColor="#EEF2F7" backgroundColor="#20232B" cornerRadius="10"/>
+    <brls:Label id="guide/slot2" width="250" height="52" marginLeft="6" fontSize="12" textColor="#EEF2F7" backgroundColor="#20232B" cornerRadius="10"/>
 </brls:Box>
 )xml";
 
@@ -302,18 +306,10 @@ public:
         if (logoUrl.empty()) {
             this->logo->setImageFromRes("pictures/video-card-bg.png");
         } else {
-            ImageHelper::with(logo)->load(logoUrl);
+            ImageHelper::with(logo)->loadWithDiskCache(logoUrl);
         }
 
-        brls::Label* slots[] = {slot0, slot1, slot2};
-        for (int slot = 0; slot < 3; ++slot) {
-            auto slotStart = guideStart + (slot * 30 * 60);
-            auto slotStop  = slotStart + (30 * 60);
-            auto programmes = tsvitch::EpgManager::instance().window(channel.id, slotStart, slotStop);
-            std::string header = fmt::format("{}\n", formatGuideTime(slotStart));
-            std::string body   = programmes.empty() ? "Live TV" : programmeText(programmes.front(), slotStart, slotStop);
-            slots[slot]->setText(header + body);
-        }
+        this->renderProgrammeSlots(guideStart);
     }
 
     void prepareForReuse() override {
@@ -321,9 +317,7 @@ public:
         this->groupLabel->setText("");
         this->heartLabel->setText("");
         this->logo->setImageFromRes("pictures/video-card-bg.png");
-        slot0->setText("");
-        slot1->setText("");
-        slot2->setText("");
+        this->resetProgrammeSlots();
     }
 
     void cacheForReuse() override { ImageHelper::clear(this->logo); }
@@ -333,6 +327,48 @@ public:
     static RecyclingGridItem* create() { return new LiveGuideRowCell(); }
 
 private:
+    void resetProgrammeSlots() {
+        brls::Label* slots[] = {slot0, slot1, slot2};
+        for (auto* slot : slots) {
+            slot->setVisibility(brls::Visibility::VISIBLE);
+            slot->setWidth(GUIDE_SLOT_WIDTH);
+            slot->setText("");
+        }
+    }
+
+    void renderProgrammeSlots(std::time_t guideStart) {
+        this->resetProgrammeSlots();
+
+        brls::Label* slots[] = {slot0, slot1, slot2};
+        auto windowStop      = guideStart + (3 * GUIDE_SLOT_SECONDS);
+        int slot             = 0;
+
+        while (slot < 3) {
+            auto slotStart  = guideStart + (slot * GUIDE_SLOT_SECONDS);
+            auto slotStop   = slotStart + GUIDE_SLOT_SECONDS;
+            auto programmes = tsvitch::EpgManager::instance().window(channel.id, slotStart, slotStop);
+
+            if (programmes.empty()) {
+                slots[slot]->setText(fmt::format("{}\nLive TV", formatGuideTime(slotStart)));
+                slot++;
+                continue;
+            }
+
+            const auto& programme = programmes.front();
+            auto visibleStop      = std::min(programme.stop, windowStop);
+            int endSlot           = static_cast<int>((visibleStop - guideStart + GUIDE_SLOT_SECONDS - 1) / GUIDE_SLOT_SECONDS);
+            endSlot               = std::max(slot + 1, std::min(3, endSlot));
+            int span              = endSlot - slot;
+
+            slots[slot]->setWidth((GUIDE_SLOT_WIDTH * span) + (GUIDE_SLOT_GAP * (span - 1)));
+            slots[slot]->setText(programmeText(programme, guideStart, windowStop));
+            for (int hidden = slot + 1; hidden < endSlot; ++hidden) {
+                slots[hidden]->setVisibility(brls::Visibility::GONE);
+            }
+            slot = endSlot;
+        }
+    }
+
     tsvitch::LiveM3u8 channel;
     BRLS_BIND(brls::Image, logo, "guide/logo");
     BRLS_BIND(brls::Label, heartLabel, "guide/heart");
@@ -615,6 +651,22 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
 
     this->registerAction("hints/search"_i18n, brls::BUTTON_Y, [this](...) {
         this->search();
+        return true;
+    });
+
+    this->registerAction("M3U / EPG", brls::BUTTON_START, [this](...) {
+        Intent::openSettings([this]() {
+            tsvitch::EpgManager::instance().loadFromUrl(ProgramConfig::instance().getEpgUrl());
+            this->recyclingGrid->reloadData();
+        });
+        return true;
+    });
+
+    this->iptvSettingsButton->registerClickAction([this](brls::View* view) -> bool {
+        Intent::openSettings([this]() {
+            tsvitch::EpgManager::instance().loadFromUrl(ProgramConfig::instance().getEpgUrl());
+            this->recyclingGrid->reloadData();
+        });
         return true;
     });
 
