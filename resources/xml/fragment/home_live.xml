@@ -14,26 +14,19 @@
                 lineRight="1">
                 <brls:Box
                         width="100%"
-                        height="96"
+                        height="136"
                         axis="row"
                         alignItems="center"
+                        justifyContent="flex-start"
                         paddingLeft="8"
                         paddingRight="8"
                         marginTop="4">
                         <brls:Image
                                 image="@res/icon/icon.png"
                                 scalingType="fit"
-                                cornerRadius="10"
-                                width="76"
-                                height="76"
-                                marginRight="14"/>
-                        <brls:Label
-                                width="auto"
-                                height="auto"
-                                fontSize="22"
-                                textColor="#F8FAFC"
-                                text="SwitchTV"
-                                singleLine="true"/>
+                                cornerRadius="14"
+                                width="114"
+                                height="114"/>
                 </brls:Box>
                 <RecyclingGrid
                         width="250"
