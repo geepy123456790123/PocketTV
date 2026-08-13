@@ -50,7 +50,7 @@ std::string programmeText(const tsvitch::EpgProgramme& programme, std::time_t sl
                        formatGuideTime(std::min(programme.stop, slotStop)));
 }
 
-constexpr float GUIDE_SLOT_WIDTH = 243.0f;
+constexpr float GUIDE_SLOT_WIDTH = 247.0f;
 constexpr float GUIDE_SLOT_GAP   = 6.0f;
 constexpr int GUIDE_SLOT_SECONDS = 30 * 60;
 
@@ -230,20 +230,20 @@ const std::string LiveGuideRowCellXML = R"xml(
         highlightCornerRadius="14"
         cornerRadius="10">
 
-    <brls:Box width="230" height="54" axis="row" alignItems="center">
+    <brls:Box width="220" height="54" axis="row" alignItems="center">
         <brls:Image
                 id="guide/logo"
                 scalingType="fit"
                 cornerRadius="8"
                 marginRight="10"
-                width="72"
+                width="56"
                 height="40"/>
         <brls:Label
                 id="guide/logo/fallback"
                 positionType="absolute"
                 positionLeft="10"
                 positionTop="18"
-                width="72"
+                width="56"
                 height="16"
                 fontSize="9"
                 textColor="#F8FAFC"
@@ -253,24 +253,24 @@ const std::string LiveGuideRowCellXML = R"xml(
         <brls:Label
                 id="guide/heart"
                 positionType="absolute"
-                positionLeft="38"
-                positionTop="4"
-                width="18"
-                height="18"
-                fontSize="15"
+                positionLeft="48"
+                positionTop="7"
+                width="14"
+                height="14"
+                fontSize="11"
                 textColor="#FF375F"
                 text=""/>
-        <brls:Box width="128" height="auto" axis="column">
+        <brls:Box width="154" height="auto" axis="column">
             <brls:Label
                     id="guide/channel"
-                    width="128"
+                    width="154"
                     height="auto"
                     fontSize="16"
                     textColor="#F8FAFC"
                     singleLine="true"/>
             <brls:Label
                     id="guide/group"
-                    width="128"
+                    width="154"
                     height="auto"
                     fontSize="11"
                     textColor="#A7B0BA"
@@ -278,9 +278,9 @@ const std::string LiveGuideRowCellXML = R"xml(
         </brls:Box>
     </brls:Box>
 
-    <brls:Label id="guide/slot0" width="243" height="52" marginLeft="6" fontSize="12" textColor="#EEF2F7" backgroundColor="#20232B" cornerRadius="10"/>
-    <brls:Label id="guide/slot1" width="243" height="52" marginLeft="6" fontSize="12" textColor="#EEF2F7" backgroundColor="#20232B" cornerRadius="10"/>
-    <brls:Label id="guide/slot2" width="243" height="52" marginLeft="6" fontSize="12" textColor="#EEF2F7" backgroundColor="#20232B" cornerRadius="10"/>
+    <brls:Label id="guide/slot0" width="247" height="52" marginLeft="6" fontSize="12" textColor="#EEF2F7" backgroundColor="#20232B" cornerRadius="10"/>
+    <brls:Label id="guide/slot1" width="247" height="52" marginLeft="6" fontSize="12" textColor="#EEF2F7" backgroundColor="#20232B" cornerRadius="10"/>
+    <brls:Label id="guide/slot2" width="247" height="52" marginLeft="6" fontSize="12" textColor="#EEF2F7" backgroundColor="#20232B" cornerRadius="10"/>
 </brls:Box>
 )xml";
 
