@@ -1,159 +1,66 @@
 <p align="center">
-    <img src="resources/icon/icon.png" alt="logo" height="128" width="128"/>
+    <img src="resources/icon/icon.png" alt="SwitchTV logo" height="160" width="160"/>
 </p>
+
+<h1 align="center">SwitchTV</h1>
+
 <p align="center">
-  TV finally on Switch
+  Live TV for Nintendo Switch homebrew, with M3U playlists, XMLTV guide data, channel logos, favorites, and a compact Apple TV-inspired guide.
 </p>
-
-- - -
-<div align="center">
-<img src="https://img.shields.io/github/v/release/giovannimirulla/TsVitch"/>
-<img src="https://img.shields.io/endpoint?url=https://giovannimirulla.github.io/TsVitch/downloads.json">
-<img src="https://img.shields.io/github/stars/giovannimirulla/TsVitch?style=flat"/>
-<img src="https://img.shields.io/github/forks/giovannimirulla/TsVitch"/>
-</div>
-
-
-<div align="center"><img src="https://img.shields.io/badge/-Nintendo%20Switch-e4000f?style=flat&logo=Nintendo%20Switch"/>
-<img src="https://img.shields.io/badge/-macOS%2010.11+-black?style=flat&logo=Apple">
-</div>
-<br>
 
 <div align="center">
-<a href="https://discord.gg/etUeUJXkm3">
-    <img src="https://img.shields.io/badge/Join%20on%20Discord-5865F2?logo=discord&logoColor=white&style=for-the-badge" alt="Join on Discord"/>
-</a>
+<img src="https://img.shields.io/github/v/release/geepy123456790123/TsVitch"/>
+<img src="https://img.shields.io/github/stars/geepy123456790123/TsVitch?style=flat"/>
+<img src="https://img.shields.io/github/forks/geepy123456790123/TsVitch"/>
 </div>
-<br>
-<p align="center">
-<img src="docs/images/screenshot-NX.png" alt="screenshot">
-</p>
-<p align="center">
-<img src="docs/images/screenshot-macOS.png" alt="screenshot">
-</p>
 
-
-# Introduction
-
-This app turns your Nintendo Switch into a powerful multimedia streaming device. With a user-friendly interface and extensive customization options, you can easily access and enjoy your favorite IPTV channels.
-
-- Access to Your Favorite Content: Supports IPTV playlists in M3U format, enabling streaming of live TV, movies, and on-demand series.
-- Optimized Interface: A clean, intuitive design tailored for Nintendo Switch's touchscreen and Joy-Con controls.
-- Multilanguage Support: Offers subtitles, multiple audio tracks, and language options for a global audience.
+<div align="center">
+<img src="https://img.shields.io/badge/-Nintendo%20Switch-e4000f?style=flat&logo=Nintendo%20Switch"/>
+<img src="https://img.shields.io/badge/-Homebrew-2A2D35?style=flat"/>
+</div>
 
 <br>
 
-## Default Playlist
+<p align="center">
+<img src="docs/images/switchtv-live-guide.png" alt="SwitchTV live guide screenshot">
+</p>
 
-The app comes preloaded with a default playlist sourced from the [Free-TV/IPTV repository](https://github.com/Free-TV/IPTV). This repository provides a wide range of free and publicly available IPTV channels.
+## Highlights
 
-### Nintendo Switch
+- M3U playlist support for live channels.
+- XMLTV EPG support with a persistent EPG URL setting.
+- 90-minute Live TV guide with 30-minute columns and L/R guide paging.
+- Channel logos from playlist metadata, with compact fallback labels when logos are unavailable.
+- Favorites pinned above the full channel list and marked with a small heart.
+- App-style dark theme with a subtle aurora background behind the guide.
+- Existing video playback path preserved from TsVitch.
 
+## Playlist And EPG Privacy
 
-1. Download TsVitch-NintendoSwitch.zip from: [TsVitch releases](https://github.com/giovannimirulla/TsVitch/releases)
-2. Place TsVitch.nro in the SD card under the switch directory.
-3. On the home screen, hold the R button while opening any game to access hbmenu. From the list, select TsVitch and click to launch.
-4. [Optional] Install a desktop shortcut within the app via: Settings/Utilities/User Guide.
+SwitchTV does not include a private playlist or EPG URL by default. Add your own M3U and XMLTV EPG addresses inside the app from the Live TV settings.
 
-# Clone & Build
+The app does not host or provide IPTV content. Users are responsible for ensuring their playlists contain only legal and authorized streams.
 
-```shell
-# Pulling code
-git clone --recursive https://github.com/giovannimirulla/TsVitch.git
-cd TsVitch
-```
+## Nintendo Switch
 
-### PC
+1. Download the latest SwitchTV release.
+2. Copy `SwitchTV.nro` to the `switch` folder on your SD card.
+3. Launch hbmenu with full application memory, then open SwitchTV.
+4. Open Live TV settings and enter your M3U playlist URL and optional XMLTV EPG URL.
 
-Currently TsVitch is supported on macOS.
+## Build
 
-<details>
-
-#### macOS
-
-```shell
-# macOS: install dependencies
-brew install mpv webp
-
-cmake -B build -DCPR_USE_SYSTEM_CURL=ON \
-  -DCPR_USE_BOOST_FILESYSTEM=ON \
-  -DCURL_INCLUDE_DIR=/opt/homebrew/opt/curl/include \
-  -DCURL_LIBRARY=/opt/homebrew/opt/curl/lib/libcurl.dylib \
-  -DBOOST_ROOT=/opt/homebrew/opt/boost \
-  -DBoost_NO_SYSTEM_PATHS=ON \
-  -DPLATFORM_DESKTOP=ON
-make -C build TsVitch -j$(sysctl -n hw.ncpu)
-```
-
-</details>
-
-### Cross-compile the Switch executable (TsVitch.nro)
-
-Recommended to use docker build, local build configuration environment is slightly cumbersome, but can be used to switch the underlying ffmpeg or mpv and other dependent libraries for more flexible debugging.
-
-<details>
-
-The following describes the build method under OpenGL. deko3d (better hard solver support) please refer to it: `scripts/build_switch_deko3d.sh`
-
-#### Docker
+The Switch build uses the repository's existing devkitPro path:
 
 ```shell
-docker run --rm -v $(pwd):/data devkitpro/devkita64:20240202 \
-  bash -c "/data/scripts/build_switch.sh"
+docker run --rm -v $(pwd):/data devkitpro/devkita64:latest \
+  bash -lc "cd /data && scripts/build_switch.sh"
 ```
 
-#### Compilation 
+The generated app is `SwitchTV.nro` in the Switch build directory.
 
-```shell
-# 1. Install the devkitpro environment: https://github.com/devkitPro/pacman/releases
+## Attribution
 
-# 2. Installation of dependencies
-sudo dkp-pacman -S switch-glfw switch-libwebp switch-cmake switch-curl devkitA64
+SwitchTV is based on TsVitch by giovannimirulla and keeps the original GPL-3.0 license.
 
-# 3. Installing custom dependencies
-base_url="https://github.com/xfangfang/wilwili/releases/download/v0.1.0"
-sudo dkp-pacman -U \
-    $base_url/switch-ffmpeg-7.1-1-any.pkg.tar.zst \
-    $base_url/switch-libmpv-0.36.0-3-any.pkg.tar.zst
-
-# 4. Build
-cmake -B cmake-build-switch -DPLATFORM_SWITCH=ON
-make -C cmake-build-switch TsVitch.nro -j$(nproc)
-```
-
-</details>
-
-# Disclaimer
-This project is for educational purposes only. The author is not responsible for any damage caused by the use of this project. Please comply with the laws of your country.
-
-This app does not host or provide any IPTV content. Users are responsible for ensuring their playlists contain only legal and authorized content.
-
-# Acknowledgement
-
-The development of TsVitch cannot do without the support of the following open source projects.
-
-- Toolchain: devkitpro, switchbrew, vitasdk OpenOrbis and PacBrew
-    - https://github.com/devkitPro
-    - https://github.com/switchbrew/libnx
-    - https://github.com/vitasdk
-    - https://github.com/OpenOrbis
-    - https://github.com/PacBrew
-- UI Library: natinusala and XITRIX
-    - https://github.com/natinusala/borealis
-    - https://github.com/XITRIX/borealis
-- Video Player: Cpasjuste, proconsule fish47 and averne
-    - https://github.com/Cpasjuste/pplay
-    - https://github.com/proconsule/nxmp
-    - https://github.com/fish47/FFmpeg-vita
-    - https://github.com/averne
-- wiliwili
-    - https://github.com/xfangfang/wiliwili
-- Misc
-    - https://github.com/nlohmann/json
-    - https://github.com/nayuki/QR-Code-generator
-    - https://github.com/BYVoid/OpenCC
-    - https://github.com/imageworks/pystring
-    - https://github.com/sammycage/lunasvg
-    - https://chromium.googlesource.com/webm/libwebp
-    - https://github.com/fancycode/MemoryModule
-    - https://github.com/dacap/clip
+This project builds on open source work from devkitPro, switchbrew, borealis, mpv, FFmpeg, wiliwili, nlohmann/json, CPR, OpenCC, lunasvg, libwebp, and related dependencies included in the upstream project.
