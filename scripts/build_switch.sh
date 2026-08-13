@@ -44,15 +44,17 @@ if [ -z "${SERVER_TOKEN}" ]; then
     exit 1
 fi
 
-if [ -z "${M3U8_URL}" ]; then
-    echo "M3U8_URL not found in environment"
-    exit 1
-fi
-
 # GITHUB_TOKEN is optional but pass it if available
 GITHUB_TOKEN_FLAG=""
 if [ -n "${GITHUB_TOKEN}" ]; then
     GITHUB_TOKEN_FLAG="-DGITHUB_TOKEN=\"${GITHUB_TOKEN}\""
+fi
+
+# M3U8_URL is optional. Leaving it empty makes the public build start without
+# a bundled playlist, so users can enter their own M3U and XMLTV/EPG URLs.
+M3U8_URL_FLAG=""
+if [ -n "${M3U8_URL}" ]; then
+    M3U8_URL_FLAG="-DM3U8_URL=\"${M3U8_URL}\""
 fi
 
 # Disable unity build by default for stability on Switch
@@ -72,8 +74,8 @@ cmake -B ${BUILD_DIR} \
   -DANALYTICS_ID="${GA_ID}" \
   -DANALYTICS_KEY="${GA_KEY}" \
   -DSERVER_URL="${SERVER_URL}" \
-    -DSERVER_TOKEN="${SERVER_TOKEN}" \
-  -DM3U8_URL="${M3U8_URL}" \
+  -DSERVER_TOKEN="${SERVER_TOKEN}" \
+  ${M3U8_URL_FLAG} \
   ${GITHUB_TOKEN_FLAG} 
 
 make -C ${BUILD_DIR} SwitchTV.nro -j$(nproc)

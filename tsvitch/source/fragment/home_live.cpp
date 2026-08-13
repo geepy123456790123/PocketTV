@@ -630,6 +630,10 @@ HomeLive::HomeLive() {
                 if (!cachedChannels.empty()) {
                     brls::Logger::info("HomeLive constructor: Using valid M3U8 cache ({} channels found)", cachedChannels.size());
                     this->onLiveList(cachedChannels, false);
+                } else if (ProgramConfig::instance().getM3U8Url().empty()) {
+                    brls::Logger::info("HomeLive constructor: no M3U8 URL configured");
+                    this->recyclingGrid->setEmpty("Enter an M3U playlist URL in M3U / EPG settings");
+                    this->upRecyclingGrid->setVisibility(brls::Visibility::GONE);
                 } else {
                     brls::Logger::info("HomeLive constructor: M3U8 cache is invalid or empty, requesting fresh channels");
                     this->requestLiveList();
@@ -1029,6 +1033,11 @@ void HomeLive::onShow() {
             if (!cachedChannels.empty()) {
                 brls::Logger::info("HomeLive onShow: Using valid cached channels ({} channels)", cachedChannels.size());
                 this->onLiveList(cachedChannels, false);
+            } else if (ProgramConfig::instance().getSettingItem(SettingItem::IPTV_MODE, 0) == 0 &&
+                       ProgramConfig::instance().getM3U8Url().empty()) {
+                brls::Logger::info("HomeLive onShow: no M3U8 URL configured");
+                this->recyclingGrid->setEmpty("Enter an M3U playlist URL in M3U / EPG settings");
+                this->upRecyclingGrid->setVisibility(brls::Visibility::GONE);
             } else {
                 brls::Logger::info("HomeLive onShow: No valid cache, requesting fresh channels");
                 this->requestLiveList();

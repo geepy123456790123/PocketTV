@@ -190,6 +190,12 @@ void TsVitchClient::get_file_m3u8(const std::function<void(LiveM3u8ListResult)>&
 {
     auto m3u8Url = ProgramConfig::instance().getM3U8Url();
     auto timeoutMs = ProgramConfig::instance().getIntOption(SettingItem::M3U8_TIMEOUT);
+
+    if (m3u8Url.empty()) {
+        brls::Logger::warning("M3U8 playlist URL is empty");
+        error("Enter an M3U playlist URL in M3U / EPG settings", -1);
+        return;
+    }
     
     // Timeout più intelligente basato sulla dimensione prevista
     if (timeoutMs < 30000) timeoutMs = 30000; // Minimum 30 secondi per file M3U8 grandi
