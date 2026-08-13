@@ -38,16 +38,27 @@
                         wireframe="false"
                         id="dynamic/up/recyclingGrid" />
         </brls:Box>
-        <RecyclingGrid
-                paddingLeft="20"
-                paddingRight="20"
-                marginTop="70"
+        <brls:Box
                 grow="1"
-                spanCount="1"
-                itemHeight="70"
-                wireframe="false"
-                preFetchLine="2"
-                id="home/live/recyclingGrid" />
+                height="auto"
+                backgroundColor="#050608">
+                <AuroraBackground
+                        positionType="absolute"
+                        positionLeft="0"
+                        positionTop="0"
+                        width="100%"
+                        height="100%" />
+                <RecyclingGrid
+                        paddingLeft="20"
+                        paddingRight="20"
+                        marginTop="70"
+                        grow="1"
+                        spanCount="1"
+                        itemHeight="70"
+                        wireframe="false"
+                        preFetchLine="2"
+                        id="home/live/recyclingGrid" />
+        </brls:Box>
 
 
         <brls:Box
