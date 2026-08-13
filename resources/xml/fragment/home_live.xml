@@ -90,19 +90,19 @@
                         hideHighlightBackground="true"
                         width="300"
                         height="35"
-                        backgroundColor="#F5F5F7"
+                        backgroundColor="#2A2D35"
                         paddingLeft="15"
                         cornerRadius="12">
                         <brls:Label
                                 fontSize="14"
-                                textColor="#18191c"
+                                textColor="#F5F5F7"
                                 text="@i18n/tsvitch/home/common/search" />
                         <HintLabel
                                 height="35"
                                 positionType="absolute"
                                 positionRight="15"
                                 fontSize="14"
-                                textColor="#18191c"
+                                textColor="#F5F5F7"
                                 text="y" />
                 </CustomButton>
         </brls:Box>
