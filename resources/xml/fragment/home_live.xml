@@ -2,7 +2,8 @@
         axis="row"
         width="auto"
         marginTop="10"
-        height="auto">
+        height="auto"
+        backgroundColor="#050608">
         <RecyclingGrid
                 width="270"
                 paddingLeft="10"
@@ -13,7 +14,7 @@
                 preFetchLine="2"
                 spanCount="1"
                 wireframe="false"
-                lineColor="@theme/color/line"
+                lineColor="#2A2D35"
                 lineRight="1"
                 id="dynamic/up/recyclingGrid" />
         <RecyclingGrid
@@ -21,8 +22,8 @@
                 paddingRight="20"
                 marginTop="70"
                 grow="1"
-                spanCount="@style/tsvitch/grid/span/4"
-                itemHeight="200"
+                spanCount="1"
+                itemHeight="112"
                 wireframe="false"
                 preFetchLine="2"
                 id="home/live/recyclingGrid" />
@@ -43,9 +44,9 @@
                         hideHighlightBackground="true"
                         width="300"
                         height="35"
-                        backgroundColor="#E3E5E7"
+                        backgroundColor="#F5F5F7"
                         paddingLeft="15"
-                        cornerRadius="6">
+                        cornerRadius="12">
                         <brls:Label
                                 fontSize="14"
                                 textColor="#18191c"

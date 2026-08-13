@@ -215,41 +215,46 @@ protected:
 const std::string LiveGuideRowCellXML = R"xml(
 <brls:Box
         width="auto"
-        height="96"
+        height="104"
         focusable="true"
         paddingLeft="12"
         paddingRight="12"
-        paddingTop="8"
-        paddingBottom="8"
-        alignItems="center">
+        paddingTop="10"
+        paddingBottom="10"
+        alignItems="center"
+        backgroundColor="#15171C"
+        highlightCornerRadius="18"
+        cornerRadius="14">
 
-    <brls:Box width="230" height="80" axis="row" alignItems="center">
+    <brls:Box width="240" height="84" axis="row" alignItems="center">
         <brls:Image
                 id="guide/logo"
                 scalingType="fill"
-                cornerRadius="4"
-                marginRight="12"
-                width="54"
-                height="54"/>
-        <brls:Box width="160" height="auto" axis="column">
+                cornerRadius="10"
+                marginRight="14"
+                width="58"
+                height="58"/>
+        <brls:Box width="165" height="auto" axis="column">
             <brls:Label
                     id="guide/channel"
-                    width="160"
+                    width="165"
                     height="auto"
-                    fontSize="20"
+                    fontSize="21"
+                    textColor="#F8FAFC"
                     singleLine="true"/>
             <brls:Label
                     id="guide/group"
-                    width="160"
+                    width="165"
                     height="auto"
                     fontSize="14"
+                    textColor="#A7B0BA"
                     singleLine="true"/>
         </brls:Box>
     </brls:Box>
 
-    <brls:Label id="guide/slot0" width="250" height="80" marginLeft="8" fontSize="16"/>
-    <brls:Label id="guide/slot1" width="250" height="80" marginLeft="8" fontSize="16"/>
-    <brls:Label id="guide/slot2" width="250" height="80" marginLeft="8" fontSize="16"/>
+    <brls:Label id="guide/slot0" width="250" height="84" marginLeft="8" fontSize="16" textColor="#EEF2F7" backgroundColor="#20232B" cornerRadius="12"/>
+    <brls:Label id="guide/slot1" width="250" height="84" marginLeft="8" fontSize="16" textColor="#EEF2F7" backgroundColor="#20232B" cornerRadius="12"/>
+    <brls:Label id="guide/slot2" width="250" height="84" marginLeft="8" fontSize="16" textColor="#EEF2F7" backgroundColor="#20232B" cornerRadius="12"/>
 </brls:Box>
 )xml";
 
@@ -263,10 +268,11 @@ public:
         this->channelLabel->setText(channelName);
         this->groupLabel->setText(channel.groupTitle.empty() ? "Live TV" : channel.groupTitle);
 
-        if (channel.logo.empty()) {
+        std::string logoUrl = channel.logo.empty() ? tsvitch::EpgManager::instance().channelIcon(channel.id) : channel.logo;
+        if (logoUrl.empty()) {
             this->logo->setImageFromRes("pictures/video-card-bg.png");
         } else {
-            ImageHelper::with(logo)->load(channel.logo);
+            ImageHelper::with(logo)->load(logoUrl);
         }
 
         brls::Label* slots[] = {slot0, slot1, slot2};

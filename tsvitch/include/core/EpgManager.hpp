@@ -25,12 +25,14 @@ public:
     void loadFromUrl(const std::string& url);
     void parseXml(const std::string& xml);
     bool isLoaded();
+    std::string channelIcon(const std::string& channelId);
     EpgProgramme now(const std::string& channelId);
     std::vector<EpgProgramme> window(const std::string& channelId, std::time_t start, std::time_t stop);
 
 private:
     static std::time_t parseXmltvTime(const std::string& value);
     std::map<std::string, std::vector<EpgProgramme>> programmes;
+    std::map<std::string, std::string> channelIcons;
     std::mutex mutex;
     bool loaded = false;
 };

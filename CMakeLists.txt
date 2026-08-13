@@ -99,17 +99,17 @@ list(APPEND APP_PLATFORM_OPTION -DBUILD_TAG_VERSION=${GIT_TAG_VERSION} -DBUILD_T
 add_definitions(-DFONS_HASH_LUT_SIZE=4096)
 
 # Project Info
-project(TsVitch)
+project(SwitchTV)
 set(VERSION_MAJOR "0")
 set(VERSION_MINOR "3")
 set(VERSION_REVISION "1")
 if (NOT VERSION_BUILD)
     set(VERSION_BUILD "0")
 endif ()
-set(PROJECT_AUTHOR "giovannimirulla")
-set(PACKAGE_NAME com.giovannimirulla.tsvitch)
-set(VITA_TITLEID "TSVITCH0")
-set(PSN_TITLE_ID "TVSI00000")
+set(PROJECT_AUTHOR "SwitchTV")
+set(PACKAGE_NAME com.grantradermacher.switchtv)
+set(VITA_TITLEID "SWITCHTV")
+set(PSN_TITLE_ID "SCTV00000")
 set(VITA_VERSION "00.21")
 set(PROJECT_ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/icon/icon.jpg)
 set(PROJECT_RESOURCES ${CMAKE_CURRENT_SOURCE_DIR}/resources)
@@ -300,7 +300,7 @@ elseif (PLATFORM_PS4)
     add_pkg(${PROJECT_NAME}
             ${CMAKE_BINARY_DIR}/ps4
             ${PSN_TITLE_ID}
-            "TsVitch"
+            "SwitchTV"
             ${VITA_VERSION}
             8388608
     )

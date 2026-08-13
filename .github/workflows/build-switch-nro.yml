@@ -11,7 +11,7 @@ on:
 
 jobs:
   build-switch-nro:
-    name: Build TsVitch.nro
+    name: Build SwitchTV.nro
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -43,9 +43,9 @@ jobs:
           M3U8_URL: https://example.invalid/playlist.m3u8
           GITHUB_TOKEN: ${{ github.token }}
 
-      - name: Upload TsVitch.nro
+      - name: Upload SwitchTV.nro
         uses: actions/upload-artifact@v4
         with:
-          name: TsVitch-nro
-          path: cmake-build-switch/TsVitch.nro
+          name: SwitchTV-nro
+          path: cmake-build-switch/SwitchTV.nro
           if-no-files-found: error

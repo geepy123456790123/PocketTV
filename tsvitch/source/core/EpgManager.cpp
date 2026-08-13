@@ -62,8 +62,16 @@ void EpgManager::parseXml(const std::string& xml) {
     }
 
     std::map<std::string, std::vector<EpgProgramme>> parsed;
+    std::map<std::string, std::string> parsedIcons;
     auto* tv = doc.FirstChildElement("tv");
     if (!tv) return;
+
+    for (auto* node = tv->FirstChildElement("channel"); node; node = node->NextSiblingElement("channel")) {
+        std::string id = attrOf(node, "id");
+        auto* icon = node->FirstChildElement("icon");
+        std::string src = attrOf(icon, "src");
+        if (!id.empty() && !src.empty()) parsedIcons[id] = src;
+    }
 
     for (auto* node = tv->FirstChildElement("programme"); node; node = node->NextSiblingElement("programme")) {
         EpgProgramme programme;
@@ -87,6 +95,7 @@ void EpgManager::parseXml(const std::string& xml) {
     {
         std::lock_guard<std::mutex> lock(mutex);
         programmes = std::move(parsed);
+        channelIcons = std::move(parsedIcons);
         loaded     = true;
     }
     brls::Logger::info("EpgManager: loaded XMLTV guide for {} channels", programmes.size());
@@ -95,6 +104,12 @@ void EpgManager::parseXml(const std::string& xml) {
 bool EpgManager::isLoaded() {
     std::lock_guard<std::mutex> lock(mutex);
     return loaded;
+}
+
+std::string EpgManager::channelIcon(const std::string& channelId) {
+    std::lock_guard<std::mutex> lock(mutex);
+    auto found = channelIcons.find(channelId);
+    return found == channelIcons.end() ? "" : found->second;
 }
 
 EpgProgramme EpgManager::now(const std::string& channelId) {

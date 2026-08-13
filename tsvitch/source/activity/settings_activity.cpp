@@ -16,6 +16,7 @@
 #include "utils/vibration_helper.hpp"
 #include "utils/dialog_helper.hpp"
 #include "utils/activity_helper.hpp"
+#include "core/EpgManager.hpp"
 #include "view/text_box.hpp"
 #include "view/selector_cell.hpp"
 #include "view/mpv_core.hpp"
@@ -548,6 +549,7 @@ void SettingsActivity::onContentAvailable() {
         [](const std::string& data) {
             std::string epgUrl = pystring::strip(data);
             ProgramConfig::instance().setEpgUrl(epgUrl);
+            tsvitch::EpgManager::instance().loadFromUrl(epgUrl);
         },
         "Enter XMLTV guide URL", "http://example.com/guide.xml", 255);
     btnEpgInput->detail->setMaxWidth(140);

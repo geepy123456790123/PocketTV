@@ -1,7 +1,7 @@
 
 set -e
 
-BUILD_DIR=cmake-build-switch
+BUILD_DIR=${BUILD_DIR:-cmake-build-switch}
 
 
 cd "$(dirname $0)/.."
@@ -72,4 +72,4 @@ cmake -B ${BUILD_DIR} \
   -DM3U8_URL="${M3U8_URL}" \
   ${GITHUB_TOKEN_FLAG} 
 
-make -C ${BUILD_DIR} TsVitch.nro -j$(nproc)
+make -C ${BUILD_DIR} SwitchTV.nro -j$(nproc)
