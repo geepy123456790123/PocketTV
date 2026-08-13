@@ -309,8 +309,7 @@ public:
     void setChannel(const tsvitch::LiveM3u8& channel, std::time_t guideStart) {
         this->channel = channel;
         this->heartLabel->setText(FavoriteManager::get()->isFavorite(channel.url) ? "♥" : "");
-        std::string channelName = channel.chno.empty() ? channel.title : channel.chno + "  " + channel.title;
-        this->channelLabel->setText(channelName);
+        this->channelLabel->setText(channel.title);
         this->groupLabel->setText(channel.groupTitle.empty() ? "Live TV" : channel.groupTitle);
 
         std::string logoUrl = channel.logo.empty() ? tsvitch::EpgManager::instance().channelIcon(channel.id) : channel.logo;
