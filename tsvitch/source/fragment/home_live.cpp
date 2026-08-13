@@ -235,14 +235,14 @@ const std::string LiveGuideRowCellXML = R"xml(
                 id="guide/logo"
                 scalingType="fit"
                 marginRight="10"
-                width="56"
+                width="43"
                 height="40"/>
         <brls:Label
                 id="guide/logo/fallback"
                 positionType="absolute"
                 positionLeft="10"
                 positionTop="18"
-                width="56"
+                width="43"
                 height="16"
                 fontSize="9"
                 textColor="#F8FAFC"
@@ -252,7 +252,7 @@ const std::string LiveGuideRowCellXML = R"xml(
         <brls:Label
                 id="guide/heart"
                 positionType="absolute"
-                positionLeft="48"
+                positionLeft="36"
                 positionTop="7"
                 width="14"
                 height="14"
