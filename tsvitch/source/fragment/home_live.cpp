@@ -239,6 +239,18 @@ const std::string LiveGuideRowCellXML = R"xml(
                 width="40"
                 height="40"/>
         <brls:Label
+                id="guide/logo/fallback"
+                positionType="absolute"
+                positionLeft="10"
+                positionTop="18"
+                width="40"
+                height="16"
+                fontSize="9"
+                textColor="#18191C"
+                horizontalAlign="center"
+                singleLine="true"
+                text=""/>
+        <brls:Label
                 id="guide/heart"
                 positionType="absolute"
                 positionLeft="38"
@@ -305,7 +317,9 @@ public:
         std::string logoUrl = channel.logo.empty() ? tsvitch::EpgManager::instance().channelIcon(channel.id) : channel.logo;
         if (logoUrl.empty()) {
             this->logo->setImageFromRes("pictures/video-card-bg.png");
+            this->logoFallbackLabel->setText(this->fallbackLogoText(channel));
         } else {
+            this->logoFallbackLabel->setText("");
             ImageHelper::with(logo)->loadWithDiskCache(logoUrl);
         }
 
@@ -317,6 +331,7 @@ public:
         this->groupLabel->setText("");
         this->heartLabel->setText("");
         this->logo->setImageFromRes("pictures/video-card-bg.png");
+        this->logoFallbackLabel->setText("");
         this->resetProgrammeSlots();
     }
 
@@ -369,8 +384,19 @@ private:
         }
     }
 
+    std::string fallbackLogoText(const tsvitch::LiveM3u8& channel) {
+        std::string source = channel.chno.empty() ? channel.title : channel.chno;
+        std::string out;
+        for (char c : source) {
+            if (std::isalnum(static_cast<unsigned char>(c))) out.push_back(static_cast<char>(std::toupper(static_cast<unsigned char>(c))));
+            if (out.size() >= 4) break;
+        }
+        return out.empty() ? "TV" : out;
+    }
+
     tsvitch::LiveM3u8 channel;
     BRLS_BIND(brls::Image, logo, "guide/logo");
+    BRLS_BIND(brls::Label, logoFallbackLabel, "guide/logo/fallback");
     BRLS_BIND(brls::Label, heartLabel, "guide/heart");
     BRLS_BIND(brls::Label, channelLabel, "guide/channel");
     BRLS_BIND(brls::Label, groupLabel, "guide/group");
