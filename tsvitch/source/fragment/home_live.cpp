@@ -234,7 +234,6 @@ const std::string LiveGuideRowCellXML = R"xml(
         <brls:Image
                 id="guide/logo"
                 scalingType="fit"
-                cornerRadius="8"
                 marginRight="10"
                 width="56"
                 height="40"/>
