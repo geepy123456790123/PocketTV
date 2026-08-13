@@ -9,9 +9,9 @@
 </p>
 
 <div align="center">
-<img src="https://img.shields.io/github/v/release/geepy123456790123/TsVitch"/>
-<img src="https://img.shields.io/github/stars/geepy123456790123/TsVitch?style=flat"/>
-<img src="https://img.shields.io/github/forks/geepy123456790123/TsVitch"/>
+<img src="https://img.shields.io/github/v/release/geepy123456790123/SwitchTV"/>
+<img src="https://img.shields.io/github/stars/geepy123456790123/SwitchTV?style=flat"/>
+<img src="https://img.shields.io/github/forks/geepy123456790123/SwitchTV"/>
 </div>
 
 <div align="center">
