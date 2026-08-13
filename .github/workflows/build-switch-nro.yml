@@ -32,6 +32,7 @@ jobs:
             -e SERVER_TOKEN="${SERVER_TOKEN}" \
             -e M3U8_URL="${M3U8_URL}" \
             -e GITHUB_TOKEN="${GITHUB_TOKEN}" \
+            -e SKIP_DKP_SYNC=true \
             -v "${PWD}:/data" \
             devkitpro/devkita64:latest \
             bash -lc "cd /data && scripts/build_switch.sh"
