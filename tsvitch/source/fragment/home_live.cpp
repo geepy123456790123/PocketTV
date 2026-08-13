@@ -1,4 +1,8 @@
 #include <utility>
+#include <algorithm>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
 #include <unordered_map>
 #include <borealis/core/touch/tap_gesture.hpp>
 #include <borealis/views/dialog.hpp>
@@ -20,10 +24,33 @@
 #include "core/DownloadManager.hpp"
 #include "utils/stream_helper.hpp"
 #include "core/DownloadProgressManager.hpp"
+#include "core/EpgManager.hpp"
 
 #include "utils/config_helper.hpp"
 
 using namespace brls::literals;
+
+namespace {
+
+std::string formatGuideTime(std::time_t value) {
+    std::tm local{};
+#ifdef _WIN32
+    localtime_s(&local, &value);
+#else
+    localtime_r(&value, &local);
+#endif
+    std::ostringstream out;
+    out << std::put_time(&local, "%H:%M");
+    return out.str();
+}
+
+std::string programmeText(const tsvitch::EpgProgramme& programme, std::time_t slotStart, std::time_t slotStop) {
+    if (programme.title.empty()) return "Live TV";
+    return fmt::format("{}\n{}-{}", programme.title, formatGuideTime(std::max(programme.start, slotStart)),
+                       formatGuideTime(std::min(programme.stop, slotStop)));
+}
+
+}  // namespace
 
 class DynamicGroupChannels : public RecyclingGridItem {
 public:
@@ -185,18 +212,117 @@ protected:
     NVGcolor fontColor     = brls::Application::getTheme().getColor("brls/text");
 };
 
+const std::string LiveGuideRowCellXML = R"xml(
+<brls:Box
+        width="auto"
+        height="96"
+        focusable="true"
+        paddingLeft="12"
+        paddingRight="12"
+        paddingTop="8"
+        paddingBottom="8"
+        alignItems="center">
+
+    <brls:Box width="230" height="80" axis="row" alignItems="center">
+        <brls:Image
+                id="guide/logo"
+                scalingType="fill"
+                cornerRadius="4"
+                marginRight="12"
+                width="54"
+                height="54"/>
+        <brls:Box width="160" height="auto" axis="column">
+            <brls:Label
+                    id="guide/channel"
+                    width="160"
+                    height="auto"
+                    fontSize="20"
+                    singleLine="true"/>
+            <brls:Label
+                    id="guide/group"
+                    width="160"
+                    height="auto"
+                    fontSize="14"
+                    singleLine="true"/>
+        </brls:Box>
+    </brls:Box>
+
+    <brls:Label id="guide/slot0" width="250" height="80" marginLeft="8" fontSize="16"/>
+    <brls:Label id="guide/slot1" width="250" height="80" marginLeft="8" fontSize="16"/>
+    <brls:Label id="guide/slot2" width="250" height="80" marginLeft="8" fontSize="16"/>
+</brls:Box>
+)xml";
+
+class LiveGuideRowCell : public RecyclingGridItem {
+public:
+    LiveGuideRowCell() { this->inflateFromXMLString(LiveGuideRowCellXML); }
+
+    void setChannel(const tsvitch::LiveM3u8& channel, std::time_t guideStart) {
+        this->channel = channel;
+        std::string channelName = channel.chno.empty() ? channel.title : channel.chno + "  " + channel.title;
+        this->channelLabel->setText(channelName);
+        this->groupLabel->setText(channel.groupTitle.empty() ? "Live TV" : channel.groupTitle);
+
+        if (channel.logo.empty()) {
+            this->logo->setImageFromRes("pictures/video-card-bg.png");
+        } else {
+            ImageHelper::with(logo)->load(channel.logo);
+        }
+
+        brls::Label* slots[] = {slot0, slot1, slot2};
+        for (int slot = 0; slot < 3; ++slot) {
+            auto slotStart = guideStart + (slot * 30 * 60);
+            auto slotStop  = slotStart + (30 * 60);
+            auto programmes = tsvitch::EpgManager::instance().window(channel.id, slotStart, slotStop);
+            std::string header = fmt::format("{}\n", formatGuideTime(slotStart));
+            std::string body   = programmes.empty() ? "Live TV" : programmeText(programmes.front(), slotStart, slotStop);
+            slots[slot]->setText(header + body);
+        }
+    }
+
+    void prepareForReuse() override {
+        this->channelLabel->setText("");
+        this->groupLabel->setText("");
+        this->logo->setImageFromRes("pictures/video-card-bg.png");
+        slot0->setText("");
+        slot1->setText("");
+        slot2->setText("");
+    }
+
+    void cacheForReuse() override { ImageHelper::clear(this->logo); }
+
+    tsvitch::LiveM3u8 getChannel() const { return channel; }
+
+    static RecyclingGridItem* create() { return new LiveGuideRowCell(); }
+
+private:
+    tsvitch::LiveM3u8 channel;
+    BRLS_BIND(brls::Image, logo, "guide/logo");
+    BRLS_BIND(brls::Label, channelLabel, "guide/channel");
+    BRLS_BIND(brls::Label, groupLabel, "guide/group");
+    BRLS_BIND(brls::Label, slot0, "guide/slot0");
+    BRLS_BIND(brls::Label, slot1, "guide/slot1");
+    BRLS_BIND(brls::Label, slot2, "guide/slot2");
+};
+
 class DataSourceLiveVideoList : public RecyclingGridDataSource {
 public:
-    explicit DataSourceLiveVideoList(const tsvitch::LiveM3u8ListResult& result) : videoList(result) {}
+    explicit DataSourceLiveVideoList(const tsvitch::LiveM3u8ListResult& result, std::time_t guideStart = 0)
+        : videoList(result), guideStart(guideStart) {}
     RecyclingGridItem* cellForRow(RecyclingGrid* recycler, size_t index) override {
         tsvitch::LiveM3u8& r = this->videoList[index];
         // brls::Logger::info("cellForRow: {} [{}]", r.title, index);
-        RecyclingGridItemLiveVideoCard* item = (RecyclingGridItemLiveVideoCard*)recycler->dequeueReusableCell("Cell");
-        item->setChannel(r);
+        auto* item = (LiveGuideRowCell*)recycler->dequeueReusableCell("Cell");
+        item->setChannel(r, this->guideStart);
         return item;
     }
 
     size_t getItemCount() override { return videoList.size(); }
+
+    tsvitch::LiveM3u8 getChannel(size_t index) const {
+        if (index >= videoList.size()) return {};
+        return videoList[index];
+    }
 
     void onItemSelected(RecyclingGrid* recycler, size_t index) override {
         HistoryManager::get()->add(videoList[index]);
@@ -211,6 +337,7 @@ public:
 
 private:
     tsvitch::LiveM3u8ListResult videoList;
+    std::time_t guideStart = 0;
 };
 
 HomeLive::HomeLive() {
@@ -229,9 +356,13 @@ HomeLive::HomeLive() {
     });
     hasExitSubscription = true;
     
-    recyclingGrid->registerCell("Cell", []() { return RecyclingGridItemLiveVideoCard::create(); });
+    recyclingGrid->registerCell("Cell", []() { return LiveGuideRowCell::create(); });
 
     upRecyclingGrid->registerCell("Cell", []() { return DynamicGroupChannels::create(); });
+
+    auto now = std::time(nullptr);
+    guideStart = now - (now % (30 * 60));
+    tsvitch::EpgManager::instance().loadFromUrl(ProgramConfig::instance().getEpgUrl());
 
     // Sottoscrivi all'evento di cambio M3U8
     OnM3U8UrlChanged.subscribe([this]() {
@@ -406,6 +537,16 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
         return true;
     });
 
+    this->registerAction("Guide -30m", brls::BUTTON_LB, [this](...) {
+        this->pageGuide(-1);
+        return true;
+    });
+
+    this->registerAction("Guide +30m", brls::BUTTON_RB, [this](...) {
+        this->pageGuide(1);
+        return true;
+    });
+
     // Salva channelsList SUBITO per accesso thread-safe
     this->channelsList = std::move(result); // Move invece di copy!
     
@@ -469,10 +610,7 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
         
         // Imposta il DataSource principale (già sul main thread, no brls::sync necessario)
         brls::Logger::info("HomeLive: Setting DataSource with {} filtered channels", filtered.size());
-        if (filtered.empty())
-            recyclingGrid->setEmpty();
-        else
-            recyclingGrid->setDataSource(new DataSourceLiveVideoList(std::move(filtered)));
+        this->showChannels(std::move(filtered));
         
         // Setup UI gruppi
         if (groupTitles.size() > 1) {
@@ -492,10 +630,7 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
                         groupCache[group] = filtered;
                     }
                 }
-                if (filtered.empty())
-                    recyclingGrid->setEmpty();
-                else
-                    recyclingGrid->setDataSource(new DataSourceLiveVideoList(filtered));
+                this->showChannels(filtered);
             });
             upRecyclingGrid->setDataSource(upList);
             this->selectGroupIndex(static_cast<size_t>(lastIndex));
@@ -582,29 +717,32 @@ void HomeLive::selectGroupIndex(size_t index) {
             groupCache[selectedGroup] = filtered;
         }
     }
-    if (filtered.empty())
-        recyclingGrid->setEmpty();
-    else
-        recyclingGrid->setDataSource(new DataSourceLiveVideoList(filtered));
+    this->showChannels(filtered);
 
     brls::Logger::debug("selectGroupIndex: {}", index);
 }
 
-void HomeLive::toggleFavorite() {
-    //get focus item
-    auto* item = dynamic_cast<RecyclingGridItemLiveVideoCard*>(this->recyclingGrid->getFocusedItem());
-    if (!item) return;
-
-    //get channel
-    tsvitch::LiveM3u8 channel = item->getChannel();
-
-    FavoriteManager::get()->toggle(channel);
-
-    if (FavoriteManager::get()->isFavorite(channel.url)) {
-        item->setFavoriteIcon(true);
-    } else {
-        item->setFavoriteIcon(false);
+void HomeLive::showChannels(tsvitch::LiveM3u8ListResult channels) {
+    if (channels.empty()) {
+        recyclingGrid->setEmpty();
+        return;
     }
+    recyclingGrid->setDataSource(new DataSourceLiveVideoList(channels, guideStart));
+}
+
+void HomeLive::pageGuide(int direction) {
+    guideStart += direction * 30 * 60;
+    brls::Logger::info("HomeLive: guide window moved to {}", formatGuideTime(guideStart));
+    this->recyclingGrid->reloadData();
+}
+
+void HomeLive::toggleFavorite() {
+    auto* item = dynamic_cast<LiveGuideRowCell*>(this->recyclingGrid->getFocusedItem());
+    if (!item) return;
+    tsvitch::LiveM3u8 channel = item->getChannel();
+    if (channel.url.empty()) return;
+    FavoriteManager::get()->toggle(channel);
+    this->recyclingGrid->reloadData();
 }
 
 void HomeLive::search() {
@@ -614,7 +752,7 @@ void HomeLive::search() {
 
 void HomeLive::cancelSearch() {
     isSearchActive = false;
-    this->recyclingGrid->setDataSource(new DataSourceLiveVideoList(this->channelsList));
+    this->showChannels(this->channelsList);
     upRecyclingGrid->setVisibility(brls::Visibility::VISIBLE);
     this->selectGroupIndex(this->selectedGroupIndex);
 }
@@ -645,7 +783,7 @@ void HomeLive::filter(const std::string& key) {
             if (filtered.empty()) {
                 recyclingGrid->setEmpty();
             } else {
-                recyclingGrid->setDataSource(new DataSourceLiveVideoList(filtered));
+                this->showChannels(filtered);
             }
             upRecyclingGrid->setVisibility(brls::Visibility::GONE);
         }
@@ -780,7 +918,7 @@ brls::View* HomeLive::create() {
 
 void HomeLive::downloadVideo() {
     // Ottieni l'item attualmente focalizzato
-    auto* item = dynamic_cast<RecyclingGridItemLiveVideoCard*>(this->recyclingGrid->getFocusedItem());
+    auto* item = dynamic_cast<LiveGuideRowCell*>(this->recyclingGrid->getFocusedItem());
     if (!item) {
         brls::Logger::warning("HomeLive::downloadVideo: No focused item");
         return;

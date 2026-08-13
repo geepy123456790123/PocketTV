@@ -7,6 +7,7 @@
 
 #include <map>
 #include <mutex>
+#include <ctime>
 
 typedef brls::Event<std::string> UpdateSearchEvent;
 
@@ -47,7 +48,11 @@ public:
     static View *create();
 
 private:
+    void showChannels(tsvitch::LiveM3u8ListResult channels);
+    void pageGuide(int direction);
+
     int selectedGroupIndex = 0;
+    std::time_t guideStart = 0;
     bool isSearchActive    = false;
     bool isInitialLoadInProgress = false;
     tsvitch::LiveM3u8ListResult channelsList;

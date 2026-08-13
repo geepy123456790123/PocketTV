@@ -542,6 +542,17 @@ void SettingsActivity::onContentAvailable() {
     btnM3U8Input->detail->setMaxWidth(140);      // Riduciamo a 140px per essere sicuri
     btnM3U8Input->detail->setSingleLine(true);   // Forza una sola linea
 
+    auto epgUrl = conf.getSettingItem(SettingItem::EPG_URL_ITEM, std::string{""});
+    btnEpgInput->init(
+        "XMLTV / EPG URL", epgUrl,
+        [](const std::string& data) {
+            std::string epgUrl = pystring::strip(data);
+            ProgramConfig::instance().setEpgUrl(epgUrl);
+        },
+        "Enter XMLTV guide URL", "http://example.com/guide.xml", 255);
+    btnEpgInput->detail->setMaxWidth(140);
+    btnEpgInput->detail->setSingleLine(true);
+
     auto m3u8TimeoutOption = conf.getOptionData(SettingItem::M3U8_TIMEOUT);
     selectorM3U8Timeout->init("M3U8 Timeout", m3u8TimeoutOption.optionList,
                               conf.getIntOptionIndex(SettingItem::M3U8_TIMEOUT), [m3u8TimeoutOption](int data) {

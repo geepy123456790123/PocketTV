@@ -178,6 +178,7 @@ std::unordered_map<SettingItem, ProgramOption> ProgramConfig::SETTING_MAP = {
     {SettingItem::GROUP_SELECTED_INDEX, {"group_selected_index", {}, {}, 0}},
     {SettingItem::UP_FILTER, {"up_filter", {}, {}, 0}},
     {SettingItem::M3U8_URL_ITEM, {"m3u8_url", {}, {}, 0}},
+    {SettingItem::EPG_URL_ITEM, {"epg_url", {}, {}, 0}},
     {SettingItem::PROXY_URL_ITEM, {"proxy_url", {}, {}, 0}},
     {SettingItem::M3U8_TIMEOUT, {"m3u8_timeout", {"60", "120", "300", "600"}, {60000, 120000, 300000, 600000}, 2}}, // Default: 5 minuti
     
@@ -786,6 +787,13 @@ void ProgramConfig::setM3U8Url(const std::string& url) {
         m3u8Url = M3U8_URL_VALUE;
     }
     GA("m3u8_url", {{"url", m3u8Url}});
+}
+
+std::string ProgramConfig::getEpgUrl() { return getSettingItem(SettingItem::EPG_URL_ITEM, std::string{""}); }
+
+void ProgramConfig::setEpgUrl(const std::string& url) {
+    brls::Logger::info("setEpgUrl: {}", url);
+    setSettingItem(SettingItem::EPG_URL_ITEM, url);
 }
 
 std::string ProgramConfig::getProxyUrl() {

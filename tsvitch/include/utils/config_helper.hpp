@@ -72,6 +72,7 @@ enum class SettingItem {
     DLNA_NAME,
 
     M3U8_URL_ITEM,
+    EPG_URL_ITEM,
     PROXY_URL_ITEM,
     M3U8_TIMEOUT,
 
@@ -214,6 +215,10 @@ public:
     std::string getM3U8Url();
 
     void setM3U8Url(const std::string& url);
+
+    std::string getEpgUrl();
+
+    void setEpgUrl(const std::string& url);
 
     // Xtream Codes IPTV methods
     std::string getXtreamServerUrl();
