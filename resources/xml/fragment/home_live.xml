@@ -23,7 +23,7 @@
                 marginTop="70"
                 grow="1"
                 spanCount="1"
-                itemHeight="112"
+                itemHeight="82"
                 wireframe="false"
                 preFetchLine="2"
                 id="home/live/recyclingGrid" />

@@ -215,46 +215,75 @@ protected:
 const std::string LiveGuideRowCellXML = R"xml(
 <brls:Box
         width="auto"
-        height="104"
+        height="76"
         focusable="true"
-        paddingLeft="12"
-        paddingRight="12"
-        paddingTop="10"
-        paddingBottom="10"
+        paddingLeft="10"
+        paddingRight="10"
+        paddingTop="6"
+        paddingBottom="6"
         alignItems="center"
         backgroundColor="#15171C"
-        highlightCornerRadius="18"
-        cornerRadius="14">
+        highlightCornerRadius="14"
+        cornerRadius="10">
 
-    <brls:Box width="240" height="84" axis="row" alignItems="center">
+    <brls:Box width="220" height="60" axis="row" alignItems="center">
         <brls:Image
                 id="guide/logo"
                 scalingType="fill"
-                cornerRadius="10"
-                marginRight="14"
-                width="58"
-                height="58"/>
-        <brls:Box width="165" height="auto" axis="column">
+                cornerRadius="8"
+                marginRight="12"
+                width="44"
+                height="44"/>
+        <brls:Label
+                id="guide/heart"
+                positionType="absolute"
+                positionLeft="42"
+                positionTop="6"
+                width="20"
+                height="20"
+                fontSize="16"
+                textColor="#FF375F"
+                text=""/>
+        <brls:Box width="158" height="auto" axis="column">
             <brls:Label
                     id="guide/channel"
-                    width="165"
+                    width="158"
                     height="auto"
-                    fontSize="21"
+                    fontSize="18"
                     textColor="#F8FAFC"
                     singleLine="true"/>
             <brls:Label
                     id="guide/group"
-                    width="165"
+                    width="158"
                     height="auto"
-                    fontSize="14"
+                    fontSize="12"
                     textColor="#A7B0BA"
                     singleLine="true"/>
         </brls:Box>
     </brls:Box>
 
-    <brls:Label id="guide/slot0" width="250" height="84" marginLeft="8" fontSize="16" textColor="#EEF2F7" backgroundColor="#20232B" cornerRadius="12"/>
-    <brls:Label id="guide/slot1" width="250" height="84" marginLeft="8" fontSize="16" textColor="#EEF2F7" backgroundColor="#20232B" cornerRadius="12"/>
-    <brls:Label id="guide/slot2" width="250" height="84" marginLeft="8" fontSize="16" textColor="#EEF2F7" backgroundColor="#20232B" cornerRadius="12"/>
+    <brls:Label id="guide/slot0" width="250" height="60" marginLeft="6" fontSize="13" textColor="#EEF2F7" backgroundColor="#20232B" cornerRadius="10"/>
+    <brls:Label id="guide/slot1" width="250" height="60" marginLeft="6" fontSize="13" textColor="#EEF2F7" backgroundColor="#20232B" cornerRadius="10"/>
+    <brls:Label id="guide/slot2" width="250" height="60" marginLeft="6" fontSize="13" textColor="#EEF2F7" backgroundColor="#20232B" cornerRadius="10"/>
+</brls:Box>
+)xml";
+
+const std::string LiveGuideSectionCellXML = R"xml(
+<brls:Box
+        width="auto"
+        height="38"
+        focusable="false"
+        paddingLeft="12"
+        paddingRight="12"
+        alignItems="center"
+        backgroundColor="#050608">
+    <brls:Label
+            id="guide/section/title"
+            width="auto"
+            height="auto"
+            fontSize="16"
+            textColor="#A7B0BA"
+            singleLine="true"/>
 </brls:Box>
 )xml";
 
@@ -264,6 +293,7 @@ public:
 
     void setChannel(const tsvitch::LiveM3u8& channel, std::time_t guideStart) {
         this->channel = channel;
+        this->heartLabel->setText(FavoriteManager::get()->isFavorite(channel.url) ? "♥" : "");
         std::string channelName = channel.chno.empty() ? channel.title : channel.chno + "  " + channel.title;
         this->channelLabel->setText(channelName);
         this->groupLabel->setText(channel.groupTitle.empty() ? "Live TV" : channel.groupTitle);
@@ -289,6 +319,7 @@ public:
     void prepareForReuse() override {
         this->channelLabel->setText("");
         this->groupLabel->setText("");
+        this->heartLabel->setText("");
         this->logo->setImageFromRes("pictures/video-card-bg.png");
         slot0->setText("");
         slot1->setText("");
@@ -304,6 +335,7 @@ public:
 private:
     tsvitch::LiveM3u8 channel;
     BRLS_BIND(brls::Image, logo, "guide/logo");
+    BRLS_BIND(brls::Label, heartLabel, "guide/heart");
     BRLS_BIND(brls::Label, channelLabel, "guide/channel");
     BRLS_BIND(brls::Label, groupLabel, "guide/group");
     BRLS_BIND(brls::Label, slot0, "guide/slot0");
@@ -311,28 +343,52 @@ private:
     BRLS_BIND(brls::Label, slot2, "guide/slot2");
 };
 
+class LiveGuideSectionCell : public RecyclingGridItem {
+public:
+    LiveGuideSectionCell() { this->inflateFromXMLString(LiveGuideSectionCellXML); }
+
+    void setTitle(const std::string& title) { this->title->setText(title); }
+
+    void prepareForReuse() override { this->title->setText(""); }
+
+    void cacheForReuse() override {}
+
+    static RecyclingGridItem* create() { return new LiveGuideSectionCell(); }
+
+private:
+    BRLS_BIND(brls::Label, title, "guide/section/title");
+};
+
+struct LiveGuideDisplayRow {
+    bool section = false;
+    std::string title;
+    tsvitch::LiveM3u8 channel;
+};
+
 class DataSourceLiveVideoList : public RecyclingGridDataSource {
 public:
     explicit DataSourceLiveVideoList(const tsvitch::LiveM3u8ListResult& result, std::time_t guideStart = 0)
-        : videoList(result), guideStart(guideStart) {}
+        : videoList(result), guideStart(guideStart) {
+        this->buildRows();
+    }
     RecyclingGridItem* cellForRow(RecyclingGrid* recycler, size_t index) override {
-        tsvitch::LiveM3u8& r = this->videoList[index];
-        // brls::Logger::info("cellForRow: {} [{}]", r.title, index);
+        auto& row = this->displayRows[index];
+        if (row.section) {
+            auto* item = (LiveGuideSectionCell*)recycler->dequeueReusableCell("Section");
+            item->setTitle(row.title);
+            return item;
+        }
         auto* item = (LiveGuideRowCell*)recycler->dequeueReusableCell("Cell");
-        item->setChannel(r, this->guideStart);
+        item->setChannel(row.channel, this->guideStart);
         return item;
     }
 
-    size_t getItemCount() override { return videoList.size(); }
-
-    tsvitch::LiveM3u8 getChannel(size_t index) const {
-        if (index >= videoList.size()) return {};
-        return videoList[index];
-    }
+    size_t getItemCount() override { return displayRows.size(); }
 
     void onItemSelected(RecyclingGrid* recycler, size_t index) override {
-        HistoryManager::get()->add(videoList[index]);
-        Intent::openLive(videoList, index, [recycler]() { recycler->reloadData(); });
+        if (index >= displayRows.size() || displayRows[index].section) return;
+        HistoryManager::get()->add(displayRows[index].channel);
+        Intent::openLive(playList, rowToPlayIndex[index], [recycler]() { recycler->reloadData(); });
     }
 
     void appendData(const tsvitch::LiveM3u8ListResult& data) {
@@ -342,7 +398,35 @@ public:
     void clearData() override { this->videoList.clear(); }
 
 private:
+    void buildRows() {
+        tsvitch::LiveM3u8ListResult favorites;
+        tsvitch::LiveM3u8ListResult allChannels;
+
+        for (const auto& channel : videoList) {
+            if (FavoriteManager::get()->isFavorite(channel.url)) favorites.push_back(channel);
+            allChannels.push_back(channel);
+        }
+
+        if (!favorites.empty()) {
+            displayRows.push_back({true, "Favorites", {}});
+            for (const auto& channel : favorites) addChannelRow(channel);
+        }
+
+        displayRows.push_back({true, "All Channels", {}});
+        for (const auto& channel : allChannels) addChannelRow(channel);
+    }
+
+    void addChannelRow(const tsvitch::LiveM3u8& channel) {
+        size_t rowIndex = displayRows.size();
+        displayRows.push_back({false, "", channel});
+        rowToPlayIndex[rowIndex] = playList.size();
+        playList.push_back(channel);
+    }
+
     tsvitch::LiveM3u8ListResult videoList;
+    tsvitch::LiveM3u8ListResult playList;
+    std::vector<LiveGuideDisplayRow> displayRows;
+    std::unordered_map<size_t, size_t> rowToPlayIndex;
     std::time_t guideStart = 0;
 };
 
@@ -363,6 +447,7 @@ HomeLive::HomeLive() {
     hasExitSubscription = true;
     
     recyclingGrid->registerCell("Cell", []() { return LiveGuideRowCell::create(); });
+    recyclingGrid->registerCell("Section", []() { return LiveGuideSectionCell::create(); });
 
     upRecyclingGrid->registerCell("Cell", []() { return DynamicGroupChannels::create(); });
 
@@ -730,9 +815,11 @@ void HomeLive::selectGroupIndex(size_t index) {
 
 void HomeLive::showChannels(tsvitch::LiveM3u8ListResult channels) {
     if (channels.empty()) {
+        visibleChannels.clear();
         recyclingGrid->setEmpty();
         return;
     }
+    visibleChannels = channels;
     recyclingGrid->setDataSource(new DataSourceLiveVideoList(channels, guideStart));
 }
 
@@ -748,7 +835,7 @@ void HomeLive::toggleFavorite() {
     tsvitch::LiveM3u8 channel = item->getChannel();
     if (channel.url.empty()) return;
     FavoriteManager::get()->toggle(channel);
-    this->recyclingGrid->reloadData();
+    this->showChannels(this->visibleChannels);
 }
 
 void HomeLive::search() {

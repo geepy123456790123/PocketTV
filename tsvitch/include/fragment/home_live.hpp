@@ -56,6 +56,7 @@ private:
     bool isSearchActive    = false;
     bool isInitialLoadInProgress = false;
     tsvitch::LiveM3u8ListResult channelsList;
+    tsvitch::LiveM3u8ListResult visibleChannels;
     std::map<std::string, tsvitch::LiveM3u8ListResult> groupCache;
     std::mutex groupCacheMutex;
     std::shared_ptr<std::atomic<bool>> validityFlag;
