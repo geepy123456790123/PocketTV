@@ -14,7 +14,7 @@
                 lineRight="1">
                 <brls:Box
                         width="100%"
-                        height="80"
+                        height="96"
                         axis="row"
                         alignItems="center"
                         paddingLeft="8"
@@ -23,10 +23,10 @@
                         <brls:Image
                                 image="@res/icon/icon.png"
                                 scalingType="fit"
-                                cornerRadius="8"
-                                width="44"
-                                height="44"
-                                marginRight="12"/>
+                                cornerRadius="10"
+                                width="76"
+                                height="76"
+                                marginRight="14"/>
                         <brls:Label
                                 width="auto"
                                 height="auto"
