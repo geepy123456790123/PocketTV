@@ -48,7 +48,7 @@ endif()
 # Default M3U8 URL
 option(M3U8_URL "Default M3U8 URL" "")
 if (M3U8_URL)
-    list(APPEND APP_PLATFORM_OPTION -DM3U8_URL="${M3U8_URL}")
+    list(APPEND APP_PLATFORM_OPTION "-DM3U8_URL=\\\"${M3U8_URL}\\\"")
 endif ()
 
 # Dependencies

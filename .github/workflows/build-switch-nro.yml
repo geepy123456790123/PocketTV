@@ -30,7 +30,6 @@ jobs:
             -e GA_KEY="${GA_KEY}" \
             -e SERVER_URL="${SERVER_URL}" \
             -e SERVER_TOKEN="${SERVER_TOKEN}" \
-            -e M3U8_URL="${M3U8_URL}" \
             -e GITHUB_TOKEN="${GITHUB_TOKEN}" \
             -e SKIP_DKP_SYNC=true \
             -v "${PWD}:/data" \
@@ -41,7 +40,6 @@ jobs:
           GA_KEY: ci-ga-key
           SERVER_URL: https://example.invalid
           SERVER_TOKEN: ci-server-token
-          M3U8_URL: https://example.invalid/playlist.m3u8
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Upload PocketTV.nro
