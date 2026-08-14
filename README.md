@@ -43,6 +43,8 @@ The app does not host or provide IPTV content. Users are responsible for ensurin
 
 For a subscription-gated service, use the Cloudflare Worker proxy in [docs/premium-proxy.md](docs/premium-proxy.md). It keeps upstream playlist and EPG URLs in secrets and gives PocketTV public proxy URLs instead.
 
+The signup website for a 7-day trial and $9.99/month Premium plan is in [website/premium-signup](website/premium-signup), with the matching Stripe Checkout API in [workers/signup-api](workers/signup-api).
+
 ## Nintendo Switch
 
 1. Download the latest PocketTV release.
