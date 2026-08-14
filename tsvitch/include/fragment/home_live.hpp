@@ -46,6 +46,10 @@ public:
 
     void openLiveSettings();
 
+    void openPremiumInfo();
+
+    void installForwarder();
+
     void selectGroupIndex(size_t index);
 
     void filter(const std::string &key);
@@ -55,6 +59,8 @@ public:
     static View *create();
 
 private:
+    void showInitialSetup();
+    void hideInitialSetup();
     void showChannels(tsvitch::LiveM3u8ListResult channels);
     void pageGuide(int direction);
     void updateGuideHeader();
@@ -80,4 +86,8 @@ private:
     BRLS_BIND(brls::Label, guideHeader2, "home/live/header/2");
     BRLS_BIND(CustomButton, searchField, "home/search");
     BRLS_BIND(CustomButton, iptvSettingsButton, "home/iptv-settings");
+    BRLS_BIND(brls::Box, setupPanel, "home/live/setup");
+    BRLS_BIND(CustomButton, setupM3uButton, "home/live/setup/m3u");
+    BRLS_BIND(CustomButton, setupPremiumButton, "home/live/setup/premium");
+    BRLS_BIND(CustomButton, setupForwarderButton, "home/live/setup/forwarder");
 };

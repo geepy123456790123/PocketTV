@@ -41,6 +41,8 @@ PocketTV does not include a private playlist or EPG URL by default. Add your own
 
 The app does not host or provide IPTV content. Users are responsible for ensuring their playlists contain only legal and authorized streams.
 
+For a subscription-gated service, use the Cloudflare Worker proxy in [docs/premium-proxy.md](docs/premium-proxy.md). It keeps upstream playlist and EPG URLs in secrets and gives PocketTV public proxy URLs instead.
+
 ## Nintendo Switch
 
 1. Download the latest PocketTV release.

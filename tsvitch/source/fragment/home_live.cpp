@@ -28,6 +28,10 @@
 
 #include "utils/config_helper.hpp"
 
+#ifdef BUILTIN_NSP
+#include "nspmini.hpp"
+#endif
+
 using namespace brls::literals;
 
 namespace {
@@ -541,6 +545,25 @@ HomeLive::HomeLive() {
         return true;
     });
 
+    if (this->setupM3uButton) {
+        this->setupM3uButton->registerClickAction([this](...) -> bool {
+            this->openLiveSettings();
+            return true;
+        });
+    }
+    if (this->setupPremiumButton) {
+        this->setupPremiumButton->registerClickAction([this](...) -> bool {
+            this->openPremiumInfo();
+            return true;
+        });
+    }
+    if (this->setupForwarderButton) {
+        this->setupForwarderButton->registerClickAction([this](...) -> bool {
+            this->installForwarder();
+            return true;
+        });
+    }
+
     auto now = std::time(nullptr);
     guideStart = now - (now % (30 * 60));
     tsvitch::EpgManager::instance().loadFromUrl(ProgramConfig::instance().getEpgUrl(), [this]() {
@@ -552,6 +575,7 @@ HomeLive::HomeLive() {
         brls::Logger::debug("OnM3U8UrlChanged: showing skeleton and requesting channel list");
         // Mostra lo skeleton per indicare che stiamo caricando
         brls::Threading::sync([this]() {
+            hideInitialSetup();
             statusLabel->setText("Refreshing PocketTV guide...");
             recyclingGrid->showSkeleton();
             upRecyclingGrid->setVisibility(brls::Visibility::GONE);
@@ -568,6 +592,7 @@ HomeLive::HomeLive() {
         brls::Logger::debug("OnIPTVModeChanged: showing skeleton and requesting channel list");
         // Mostra lo skeleton per indicare che stiamo caricando
         brls::Threading::sync([this]() {
+            hideInitialSetup();
             statusLabel->setText("Loading PocketTV channels...");
             recyclingGrid->showSkeleton();
             upRecyclingGrid->setVisibility(brls::Visibility::GONE);
@@ -585,6 +610,7 @@ HomeLive::HomeLive() {
                            xtreamData.url, xtreamData.username);
         // Mostra lo skeleton per indicare che stiamo caricando
         brls::Threading::sync([this]() {
+            hideInitialSetup();
             statusLabel->setText("Loading Xtream channels...");
             recyclingGrid->showSkeleton();
             upRecyclingGrid->setVisibility(brls::Visibility::GONE);
@@ -671,9 +697,7 @@ HomeLive::HomeLive() {
                     this->onLiveList(cachedChannels, false);
                 } else if (ProgramConfig::instance().getM3U8Url().empty()) {
                     brls::Logger::info("HomeLive constructor: no M3U8 URL configured");
-                    statusLabel->setText("PocketTV setup required");
-                    this->recyclingGrid->setEmpty("Press + to enter your M3U playlist URL and optional XMLTV EPG URL");
-                    this->upRecyclingGrid->setVisibility(brls::Visibility::GONE);
+                    this->showInitialSetup();
                 } else {
                     brls::Logger::info("HomeLive constructor: M3U8 cache is invalid or empty, requesting fresh channels");
                     statusLabel->setText("Downloading M3U playlist...");
@@ -706,9 +730,11 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
         statusLabel->setText("No channels found in playlist");
         recyclingGrid->setEmpty();
         upRecyclingGrid->setVisibility(brls::Visibility::GONE);
+        hideInitialSetup();
         return;
     }
 
+    this->hideInitialSetup();
     this->channelsList = std::move(result);
     this->updateGuideHeader();
 
@@ -836,6 +862,9 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
 }
 
 brls::View* HomeLive::getDefaultFocus() {
+    if (this->setupPanel && this->setupPanel->getVisibility() == brls::Visibility::VISIBLE && this->setupM3uButton) {
+        return this->setupM3uButton;
+    }
     if (this->upRecyclingGrid && this->upRecyclingGrid->getVisibility() == brls::Visibility::VISIBLE) {
         if (auto* focus = this->upRecyclingGrid->getDefaultFocus()) return focus;
     }
@@ -914,10 +943,50 @@ void HomeLive::openLiveSettings() {
             if (this->recyclingGrid) this->recyclingGrid->reloadData();
         });
         if (ProgramConfig::instance().getM3U8Url().empty()) {
-            statusLabel->setText("PocketTV setup required");
-            recyclingGrid->setEmpty("Press + to enter your M3U playlist URL and optional XMLTV EPG URL");
+            this->showInitialSetup();
         }
     });
+}
+
+void HomeLive::openPremiumInfo() {
+    auto* dialog = new brls::Dialog(
+        "PocketTV Premium will require a licensed live TV source and an external subscription website.\n\n"
+        "The app is ready for this setup path, but no premium channels are bundled in this build.");
+    dialog->addButton("Bring your own M3U / EPG", [this]() { this->openLiveSettings(); });
+    dialog->addButton("OK", []() {});
+    dialog->open();
+}
+
+void HomeLive::installForwarder() {
+    auto* dialog = new brls::Dialog(
+        "Install the PocketTV forwarder on the Switch home screen?\n\n"
+        "This creates a full-application launcher that opens /switch/PocketTV.nro. Installing unsigned NSP content may carry account or console risk.");
+    dialog->addButton("hints/cancel"_i18n, []() {});
+    dialog->addButton("Install", []() {
+#ifdef BUILTIN_NSP
+        brls::Application::blockInputs();
+        mini::InstallSD("romfs:/nsp_forwarder.nsp");
+        unsigned long long appTitleID = mini::GetTitleID();
+        appletRequestLaunchApplication(appTitleID, NULL);
+#else
+        brls::Application::notify("This build does not include the forwarder installer");
+#endif
+    });
+    dialog->open();
+}
+
+void HomeLive::showInitialSetup() {
+    statusLabel->setText("PocketTV setup required");
+    recyclingGrid->setEmpty("");
+    recyclingGrid->setVisibility(brls::Visibility::GONE);
+    upRecyclingGrid->setVisibility(brls::Visibility::GONE);
+    if (setupPanel) setupPanel->setVisibility(brls::Visibility::VISIBLE);
+    if (setupM3uButton) brls::Application::giveFocus(setupM3uButton);
+}
+
+void HomeLive::hideInitialSetup() {
+    if (setupPanel) setupPanel->setVisibility(brls::Visibility::GONE);
+    if (recyclingGrid) recyclingGrid->setVisibility(brls::Visibility::VISIBLE);
 }
 
 void HomeLive::search() {
@@ -1039,8 +1108,7 @@ void HomeLive::onShow() {
                        ProgramConfig::instance().getM3U8Url().empty()) {
                 brls::Logger::info("HomeLive onShow: no M3U8 URL configured");
                 this->statusLabel->setText("PocketTV setup required");
-                this->recyclingGrid->setEmpty("Press + to enter your M3U playlist URL and optional XMLTV EPG URL");
-                this->upRecyclingGrid->setVisibility(brls::Visibility::GONE);
+                this->showInitialSetup();
             } else {
                 brls::Logger::info("HomeLive onShow: No valid cache, requesting fresh channels");
                 this->requestLiveList();
