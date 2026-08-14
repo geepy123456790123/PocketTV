@@ -1,115 +1,38 @@
 <brls:Box
-        axis="row"
+        axis="column"
         width="auto"
-        marginTop="10"
         height="auto"
         backgroundColor="#050608">
         <brls:Box
-                width="270"
-                height="auto"
+                height="88"
                 axis="column"
-                paddingLeft="10"
-                paddingRight="10"
-                lineColor="#2A2D35"
-                lineRight="1">
-                <brls:Box
-                        width="100%"
-                        height="136"
-                        axis="row"
-                        alignItems="center"
-                        justifyContent="flex-start"
-                        paddingLeft="8"
-                        paddingRight="8"
-                        marginTop="4">
-                        <brls:Image
-                                image="@res/icon/icon.png"
-                                scalingType="fit"
-                                cornerRadius="14"
-                                width="114"
-                                height="114"/>
-                </brls:Box>
-                <RecyclingGrid
-                        width="250"
-                        grow="1"
-                        marginBottom="8"
-                        itemHeight="50"
-                        preFetchLine="2"
-                        spanCount="1"
-                        wireframe="false"
-                        id="dynamic/up/recyclingGrid" />
+                justifyContent="center"
+                paddingLeft="24"
+                paddingRight="24">
+                <brls:Label
+                        fontSize="22"
+                        textColor="#F5F5F7"
+                        text="Live TV" />
+                <brls:Label
+                        marginTop="6"
+                        fontSize="15"
+                        textColor="#AEB3C2"
+                        text="Press + for M3U / EPG settings, Y to search" />
         </brls:Box>
-        <brls:Box
+        <RecyclingGrid
                 grow="1"
-                height="auto"
-                backgroundColor="#050608">
-                <RecyclingGrid
-                        paddingLeft="20"
-                        paddingRight="20"
-                        marginTop="70"
-                        grow="1"
-                        spanCount="1"
-                        itemHeight="70"
-                        wireframe="false"
-                        preFetchLine="2"
-                        id="home/live/recyclingGrid" />
-        </brls:Box>
-
-
-        <brls:Box
-                positionType="absolute"
-                positionRight="0"
-                positionTop="0"
-                width="520"
-                height="70"
-                axis="row"
-                alignItems="center"
-                justifyContent="flex-end"
-                wireframe="false">
-                <CustomButton
-                        id="home/iptv-settings"
-                        focusable="true"
-                        highlightCornerRadius="8"
-                        hideHighlightBackground="true"
-                        width="170"
-                        height="35"
-                        marginRight="10"
-                        backgroundColor="#2A2D35"
-                        paddingLeft="15"
-                        cornerRadius="12">
-                        <brls:Label
-                                fontSize="14"
-                                textColor="#F5F5F7"
-                                text="M3U / EPG" />
-                        <HintLabel
-                                height="35"
-                                positionType="absolute"
-                                positionRight="15"
-                                fontSize="14"
-                                textColor="#F5F5F7"
-                                text="+" />
-                </CustomButton>
-                <CustomButton
-                        id="home/search"
-                        focusable="true"
-                        highlightCornerRadius="8"
-                        hideHighlightBackground="true"
-                        width="300"
-                        height="35"
-                        backgroundColor="#2A2D35"
-                        paddingLeft="15"
-                        cornerRadius="12">
-                        <brls:Label
-                                fontSize="14"
-                                textColor="#F5F5F7"
-                                text="@i18n/tsvitch/home/common/search" />
-                        <HintLabel
-                                height="35"
-                                positionType="absolute"
-                                positionRight="15"
-                                fontSize="14"
-                                textColor="#F5F5F7"
-                                text="y" />
-                </CustomButton>
-        </brls:Box>
-
+                paddingLeft="20"
+                paddingRight="20"
+                spanCount="1"
+                itemHeight="70"
+                wireframe="false"
+                preFetchLine="2"
+                id="home/live/recyclingGrid" />
+        <RecyclingGrid
+                width="1"
+                height="1"
+                spanCount="1"
+                itemHeight="1"
+                wireframe="false"
+                id="dynamic/up/recyclingGrid" />
 </brls:Box>

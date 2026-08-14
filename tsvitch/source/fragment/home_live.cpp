@@ -510,6 +510,7 @@ HomeLive::HomeLive() {
     recyclingGrid->registerCell("Section", []() { return LiveGuideSectionCell::create(); });
 
     upRecyclingGrid->registerCell("Cell", []() { return DynamicGroupChannels::create(); });
+    upRecyclingGrid->setVisibility(brls::Visibility::GONE);
 
     auto now = std::time(nullptr);
     guideStart = now - (now % (30 * 60));
@@ -690,13 +691,15 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
         return true;
     });
 
-    this->iptvSettingsButton->registerClickAction([this](brls::View* view) -> bool {
-        Intent::openSettings([this]() {
-            tsvitch::EpgManager::instance().loadFromUrl(ProgramConfig::instance().getEpgUrl());
-            this->recyclingGrid->reloadData();
+    if (this->iptvSettingsButton) {
+        this->iptvSettingsButton->registerClickAction([this](brls::View* view) -> bool {
+            Intent::openSettings([this]() {
+                tsvitch::EpgManager::instance().loadFromUrl(ProgramConfig::instance().getEpgUrl());
+                this->recyclingGrid->reloadData();
+            });
+            return true;
         });
-        return true;
-    });
+    }
 
     this->registerAction("hints/toggle_favorite"_i18n, brls::BUTTON_X, [this](...) {
         this->toggleFavorite();
