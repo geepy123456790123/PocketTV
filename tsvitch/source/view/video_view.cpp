@@ -455,11 +455,11 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
 
     mpvCore->draw(brls::Rect(x, y, width, height), alpha);
 
-    if (HIGHLIGHT_PROGRESS_BAR && (!drawOSD || is_osd_lock)) {
+    if (!isLiveMode && HIGHLIGHT_PROGRESS_BAR && (!drawOSD || is_osd_lock)) {
         drawHighlightProgress(vg, x, y + height, width, alpha);
     }
 
-    if (BOTTOM_BAR && showBottomLineSetting) {
+    if (!isLiveMode && BOTTOM_BAR && showBottomLineSetting) {
         bottomBarColor.a = alpha;
         float progress   = mpvCore->playback_time / getRealDuration();
         progress         = progress > 1.0f ? 1.0f : progress;
@@ -476,9 +476,11 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
         }
 
         if (!is_osd_lock) {
-            auto sliderRect = osdSlider->getFrame();
-            drawHighlightProgress(vg, sliderRect.getMinX() + 30, sliderRect.getMinY() + 25, sliderRect.getWidth() - 60,
-                                  alpha);
+            if (!isLiveMode) {
+                auto sliderRect = osdSlider->getFrame();
+                drawHighlightProgress(vg, sliderRect.getMinX() + 30, sliderRect.getMinY() + 25, sliderRect.getWidth() - 60,
+                                      alpha);
+            }
 
             osdTopBox->setVisibility(brls::Visibility::VISIBLE);
             osdBottomBox->setVisibility(brls::Visibility::VISIBLE);

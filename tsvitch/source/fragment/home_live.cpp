@@ -82,7 +82,7 @@ public:
 
     void setPrimary(bool primary) {
         this->primary = primary;
-        this->labelTitle->setFontSize(primary ? 20 : 15);
+        this->labelTitle->setFontSize(primary ? 19 : 17);
     }
 
     void prepareForReuse() override {
@@ -124,6 +124,11 @@ public:
         brls::Logger::debug("setSelectedIndex: {}", index);
         if (index >= list.size()) return;
         selectedIndex = index;
+        std::vector<RecyclingGridItem*>& items = recycler->getGridItems();
+        for (auto& i : items) {
+            auto* cell = dynamic_cast<DynamicGroupChannels*>(i);
+            if (cell) cell->setSelected(false);
+        }
         auto* item    = dynamic_cast<DynamicGroupChannels*>(recycler->getGridItemByIndex(index));
         if (!item) return;
         item->setSelected(true);
@@ -238,7 +243,7 @@ protected:
 const std::string LiveGuideRowCellXML = R"xml(
 <brls:Box
         width="auto"
-        height="54"
+        height="58"
         focusable="true"
         paddingLeft="8"
         paddingRight="8"
@@ -283,29 +288,29 @@ const std::string LiveGuideRowCellXML = R"xml(
                     id="guide/channel"
                     width="164"
                     height="auto"
-                    fontSize="14"
+                    fontSize="16"
                     textColor="#F8FAFC"
                     singleLine="true"/>
             <brls:Label
                     id="guide/group"
                     width="164"
                     height="auto"
-                    fontSize="11"
+                    fontSize="13"
                     textColor="#A7B0BA"
                     singleLine="true"/>
         </brls:Box>
     </brls:Box>
 
-    <brls:Label id="guide/slot0" width="247" height="44" marginLeft="6" fontSize="13" textColor="#F8FAFC" backgroundColor="#20232B" cornerRadius="8"/>
-    <brls:Label id="guide/slot1" width="247" height="44" marginLeft="6" fontSize="13" textColor="#F8FAFC" backgroundColor="#20232B" cornerRadius="8"/>
-    <brls:Label id="guide/slot2" width="247" height="44" marginLeft="6" fontSize="13" textColor="#F8FAFC" backgroundColor="#20232B" cornerRadius="8"/>
+    <brls:Label id="guide/slot0" width="247" height="46" marginLeft="6" fontSize="15" textColor="#F8FAFC" backgroundColor="#20232B" cornerRadius="8"/>
+    <brls:Label id="guide/slot1" width="247" height="46" marginLeft="6" fontSize="15" textColor="#F8FAFC" backgroundColor="#20232B" cornerRadius="8"/>
+    <brls:Label id="guide/slot2" width="247" height="46" marginLeft="6" fontSize="15" textColor="#F8FAFC" backgroundColor="#20232B" cornerRadius="8"/>
 </brls:Box>
 )xml";
 
 const std::string LiveGuideSectionCellXML = R"xml(
 <brls:Box
         width="auto"
-        height="40"
+        height="42"
         focusable="false"
         paddingLeft="12"
         paddingRight="12"
@@ -315,7 +320,7 @@ const std::string LiveGuideSectionCellXML = R"xml(
             id="guide/section/title"
             width="auto"
             height="auto"
-            fontSize="20"
+            fontSize="22"
             textColor="#F8FAFC"
             singleLine="true"/>
 </brls:Box>
@@ -531,6 +536,11 @@ HomeLive::HomeLive() {
     upRecyclingGrid->registerCell("Cell", []() { return DynamicGroupChannels::create(); });
     upRecyclingGrid->setVisibility(brls::Visibility::GONE);
 
+    this->registerAction("M3U / EPG", brls::BUTTON_START, [this](...) {
+        this->openLiveSettings();
+        return true;
+    });
+
     auto now = std::time(nullptr);
     guideStart = now - (now % (30 * 60));
     tsvitch::EpgManager::instance().loadFromUrl(ProgramConfig::instance().getEpgUrl(), [this]() {
@@ -542,7 +552,7 @@ HomeLive::HomeLive() {
         brls::Logger::debug("OnM3U8UrlChanged: showing skeleton and requesting channel list");
         // Mostra lo skeleton per indicare che stiamo caricando
         brls::Threading::sync([this]() {
-            statusLabel->setText("Loading updated M3U playlist...");
+            statusLabel->setText("Refreshing PocketTV guide...");
             recyclingGrid->showSkeleton();
             upRecyclingGrid->setVisibility(brls::Visibility::GONE);
         });
@@ -558,7 +568,7 @@ HomeLive::HomeLive() {
         brls::Logger::debug("OnIPTVModeChanged: showing skeleton and requesting channel list");
         // Mostra lo skeleton per indicare che stiamo caricando
         brls::Threading::sync([this]() {
-            statusLabel->setText("Loading channels...");
+            statusLabel->setText("Loading PocketTV channels...");
             recyclingGrid->showSkeleton();
             upRecyclingGrid->setVisibility(brls::Visibility::GONE);
         });
@@ -588,7 +598,7 @@ HomeLive::HomeLive() {
     
     // Mostra sempre lo skeleton all'inizio per UI non-bloccante
     brls::Logger::debug("HomeLive constructor: Showing skeleton for non-blocking UI");
-    statusLabel->setText("Checking channel cache...");
+    statusLabel->setText("Loading PocketTV...");
     recyclingGrid->showSkeleton();
     upRecyclingGrid->setVisibility(brls::Visibility::GONE);
     
@@ -625,7 +635,7 @@ HomeLive::HomeLive() {
                     this->onLiveList(cachedChannels, false);
                 } else {
                     brls::Logger::info("HomeLive: Xtream cache invalid/empty, requesting fresh data");
-                    statusLabel->setText("Fetching Xtream channels...");
+                    statusLabel->setText("Downloading Xtream channels...");
                     this->requestLiveList();
                 }
                 isInitialLoadInProgress = false; // Reset flag quando completato
@@ -661,12 +671,12 @@ HomeLive::HomeLive() {
                     this->onLiveList(cachedChannels, false);
                 } else if (ProgramConfig::instance().getM3U8Url().empty()) {
                     brls::Logger::info("HomeLive constructor: no M3U8 URL configured");
-                    statusLabel->setText("No M3U URL saved. Press + to enter one.");
-                    this->recyclingGrid->setEmpty("Enter an M3U playlist URL in M3U / EPG settings");
+                    statusLabel->setText("PocketTV setup required");
+                    this->recyclingGrid->setEmpty("Press + to enter your M3U playlist URL and optional XMLTV EPG URL");
                     this->upRecyclingGrid->setVisibility(brls::Visibility::GONE);
                 } else {
                     brls::Logger::info("HomeLive constructor: M3U8 cache is invalid or empty, requesting fresh channels");
-                    statusLabel->setText("Fetching M3U playlist...");
+                    statusLabel->setText("Downloading M3U playlist...");
                     this->requestLiveList();
                 }
                 isInitialLoadInProgress = false; // Reset flag quando completato
@@ -691,7 +701,7 @@ void HomeLive::onError(const std::string& error) {
 
 void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
     brls::Logger::info("Fragment HomeLive: onLiveList - received {} channels", result.size());
-    statusLabel->setText(fmt::format("Loaded {} channels", result.size()));
+    statusLabel->setText(fmt::format("Preparing {} channels", result.size()));
     if (result.empty()) {
         statusLabel->setText("No channels found in playlist");
         recyclingGrid->setEmpty();
@@ -754,14 +764,16 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
     this->selectedGroupIndex = 1;
     this->selectGroupIndex(1);
     upRecyclingGrid->setDefaultCellFocus(1);
-    brls::Application::giveFocus(upRecyclingGrid);
+    if (auto* focus = upRecyclingGrid->getDefaultFocus()) {
+        brls::Application::giveFocus(focus);
+    }
     brls::delay(10, [this]() {
         if (this->upRecyclingGrid && this->upRecyclingGrid->getVisibility() == brls::Visibility::VISIBLE) {
             this->upRecyclingGrid->setDefaultCellFocus(this->selectedGroupIndex);
             brls::Application::giveFocus(this->upRecyclingGrid->getDefaultFocus());
         }
     });
-    statusLabel->setText(fmt::format("{} channels", this->channelsList.size()));
+    statusLabel->setText(fmt::format("{} channels - logos load as available", this->channelsList.size()));
 
     if (firstLoad) {
         auto toSave = this->channelsList;
@@ -792,22 +804,9 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
         return true;
     });
 
-    this->registerAction("M3U / EPG", brls::BUTTON_START, [this](...) {
-        Intent::openSettings([this]() {
-            tsvitch::EpgManager::instance().loadFromUrl(ProgramConfig::instance().getEpgUrl(), [this]() {
-                if (this->recyclingGrid) this->recyclingGrid->reloadData();
-            });
-        });
-        return true;
-    });
-
     if (this->iptvSettingsButton) {
         this->iptvSettingsButton->registerClickAction([this](brls::View* view) -> bool {
-            Intent::openSettings([this]() {
-                tsvitch::EpgManager::instance().loadFromUrl(ProgramConfig::instance().getEpgUrl(), [this]() {
-                    if (this->recyclingGrid) this->recyclingGrid->reloadData();
-                });
-            });
+            this->openLiveSettings();
             return true;
         });
     }
@@ -832,7 +831,7 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
         return true;
     });
 
-    statusLabel->setText(fmt::format("{} channels", this->channelsList.size()));
+    statusLabel->setText(fmt::format("{} channels - logos load as available", this->channelsList.size()));
     return;
 }
 
@@ -899,8 +898,26 @@ void HomeLive::toggleFavorite() {
     if (!item) return;
     tsvitch::LiveM3u8 channel = item->getChannel();
     if (channel.url.empty()) return;
+    bool willFavorite = !FavoriteManager::get()->isFavorite(channel.url);
     FavoriteManager::get()->toggle(channel);
+    brls::Application::notify(willFavorite ? "Added to Favorites" : "Removed from Favorites");
+    {
+        std::lock_guard<std::mutex> lock(groupCacheMutex);
+        groupCache["Favorites"] = FavoriteManager::get()->getFavorites();
+    }
     this->showChannels(this->visibleChannels);
+}
+
+void HomeLive::openLiveSettings() {
+    Intent::openSettings([this]() {
+        tsvitch::EpgManager::instance().loadFromUrl(ProgramConfig::instance().getEpgUrl(), [this]() {
+            if (this->recyclingGrid) this->recyclingGrid->reloadData();
+        });
+        if (ProgramConfig::instance().getM3U8Url().empty()) {
+            statusLabel->setText("PocketTV setup required");
+            recyclingGrid->setEmpty("Press + to enter your M3U playlist URL and optional XMLTV EPG URL");
+        }
+    });
 }
 
 void HomeLive::search() {
@@ -1021,7 +1038,8 @@ void HomeLive::onShow() {
             } else if (ProgramConfig::instance().getSettingItem(SettingItem::IPTV_MODE, 0) == 0 &&
                        ProgramConfig::instance().getM3U8Url().empty()) {
                 brls::Logger::info("HomeLive onShow: no M3U8 URL configured");
-                this->recyclingGrid->setEmpty("Enter an M3U playlist URL in M3U / EPG settings");
+                this->statusLabel->setText("PocketTV setup required");
+                this->recyclingGrid->setEmpty("Press + to enter your M3U playlist URL and optional XMLTV EPG URL");
                 this->upRecyclingGrid->setVisibility(brls::Visibility::GONE);
             } else {
                 brls::Logger::info("HomeLive onShow: No valid cache, requesting fresh channels");

@@ -92,7 +92,7 @@ enum class SettingItem {
 };
 
 class APPVersion : public brls::Singleton<APPVersion> {
-    inline static std::string RELEASE_API = "https://api.github.com/repos/giovannimirulla/TsVitch/releases/latest";
+    inline static std::string RELEASE_API = "https://api.github.com/repos/geepy123456790123/PocketTV/releases/latest";
 
 public:
     int major, minor, revision;

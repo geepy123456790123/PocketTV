@@ -4,7 +4,7 @@
         height="100%"
         backgroundColor="#050608">
         <brls:Box
-                width="216"
+                width="232"
                 height="100%"
                 axis="column"
                 paddingLeft="18"
@@ -13,8 +13,8 @@
                 paddingBottom="22"
                 backgroundColor="#07080C">
                 <brls:Image
-                        width="168"
-                        height="168"
+                        width="196"
+                        height="196"
                         marginBottom="10"
                         scalingType="fit"
                         image="@res/icon/icon.png" />

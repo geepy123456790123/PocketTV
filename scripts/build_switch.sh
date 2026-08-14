@@ -78,4 +78,5 @@ cmake -B ${BUILD_DIR} \
   ${M3U8_URL_FLAG} \
   ${GITHUB_TOKEN_FLAG} 
 
-make -C ${BUILD_DIR} SwitchTV.nro -j$(nproc)
+APP_TARGET_NAME=${APP_TARGET_NAME:-PocketTV}
+make -C ${BUILD_DIR} ${APP_TARGET_NAME}.nro -j$(nproc)

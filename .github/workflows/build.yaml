@@ -1,4 +1,4 @@
-name: Build SwitchTV
+name: Build PocketTV
 
 on:
   workflow_dispatch:
@@ -59,7 +59,7 @@ jobs:
           VERSION: ${{ env.VERSION }}
         run: |
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "DIST_NRO=SwitchTV-NintendoSwitch-${VERSION}" >> $GITHUB_OUTPUT
+          echo "DIST_NRO=PocketTV-NintendoSwitch-${VERSION}" >> $GITHUB_OUTPUT
           echo "DIST_DMG_PREFIX=TsVitch-macOS" >> $GITHUB_OUTPUT
           echo "DIST_INTEL_DMG=TsVitch-macOS-IntelChip-${VERSION}" >> $GITHUB_OUTPUT
           echo "DIST_ARM_DMG=TsVitch-macOS-AppleSilicon-${VERSION}" >> $GITHUB_OUTPUT
@@ -103,7 +103,7 @@ jobs:
           make_latest: true
           tag_name: v${{ github.event.inputs.version }}
           files: |
-            ${{ needs.version.outputs.DIST_NRO }}/SwitchTV.nro
+            ${{ needs.version.outputs.DIST_NRO }}/PocketTV.nro
             ${{ needs.version.outputs.DIST_INTEL_DMG }}/${{ needs.version.outputs.DIST_INTEL_DMG }}.dmg
             ${{ needs.version.outputs.DIST_ARM_DMG }}/${{ needs.version.outputs.DIST_ARM_DMG }}.dmg
             ${{ needs.version.outputs.DIST_UNIVERSAL_DMG }}/${{ needs.version.outputs.DIST_UNIVERSAL_DMG }}.dmg
@@ -143,7 +143,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ needs.version.outputs.DIST_NRO }}${{ matrix.shuffix }}
-          path: "cmake-build-switch/SwitchTV.nro"
+          path: "cmake-build-switch/PocketTV.nro"
 
   build-macos:
     needs: [version]
