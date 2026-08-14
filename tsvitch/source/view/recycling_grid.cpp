@@ -646,9 +646,12 @@ void RecyclingGrid::onLayout() {
 
     if (!this->contentBox) return;
     this->contentBox->setWidth(width);
-    if (checkWidth()) {
-        brls::Logger::debug("RecyclingGrid::onLayout reloadData()");
+    if (!layouted) {
+        brls::Logger::debug("RecyclingGrid::onLayout initial reloadData()");
         layouted = true;
+        reloadData();
+    } else if (checkWidth()) {
+        brls::Logger::debug("RecyclingGrid::onLayout reloadData()");
         reloadData();
     }
 }
@@ -820,4 +823,3 @@ RecyclingGridItem* RecyclingGrid::getFocusedItem() {
     }
     return nullptr;
 }
-

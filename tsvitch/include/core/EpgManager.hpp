@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ctime>
+#include <functional>
 #include <map>
 #include <mutex>
 #include <string>
@@ -23,6 +24,7 @@ public:
 class EpgManager : public brls::Singleton<EpgManager> {
 public:
     void loadFromUrl(const std::string& url);
+    void loadFromUrl(const std::string& url, std::function<void()> onLoaded);
     void parseXml(const std::string& xml);
     bool isLoaded();
     std::string channelIcon(const std::string& channelId);

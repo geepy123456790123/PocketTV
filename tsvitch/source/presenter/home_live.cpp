@@ -5,6 +5,7 @@
 #include "presenter/home_live.hpp"
 #include "tsvitch/result/home_live_result.h"
 #include "borealis/core/i18n.hpp"
+#include "borealis/core/thread.hpp"
 #include "core/ChannelManager.hpp"
 #include "utils/config_helper.hpp"
 
@@ -48,17 +49,25 @@ void HomeLiveRequest::requestLiveList() {
                 isRequestInProgress = false; // Reset the flag even if object is destroyed
                 return;
             }
-            
-            try {
-                UNSET_REQUEST
-                tsvitch::LiveM3u8ListResult res = result; // copy once from client
-                brls::Logger::info("HomeLiveRequest: Successfully received {} channels", res.size());
-                this->onLiveList(std::move(res), true); // move into handler to avoid extra copies
-                isRequestInProgress = false; // Reset the flag on success
-            } catch (...) {
-                brls::Logger::error("HomeLiveRequest::requestLiveList: Exception during callback");
-                isRequestInProgress = false; // Reset the flag on exception
-            }
+
+            tsvitch::LiveM3u8ListResult res = result; // copy once from client
+            brls::sync([this, isValidFlag, res = std::move(res)]() mutable {
+                if (!isValidFlag->load()) {
+                    brls::Logger::debug("HomeLiveRequest::requestLiveList: Object destroyed before UI callback");
+                    isRequestInProgress = false;
+                    return;
+                }
+
+                try {
+                    UNSET_REQUEST
+                    brls::Logger::info("HomeLiveRequest: Successfully received {} channels", res.size());
+                    this->onLiveList(std::move(res), true); // move into handler to avoid extra copies
+                    isRequestInProgress = false; // Reset the flag on success
+                } catch (...) {
+                    brls::Logger::error("HomeLiveRequest::requestLiveList: Exception during callback");
+                    isRequestInProgress = false; // Reset the flag on exception
+                }
+            });
         },
         [this, isValidFlag](const std::string &error, int code) {
             // Check if this object is still valid before accessing it
@@ -67,16 +76,24 @@ void HomeLiveRequest::requestLiveList() {
                 isRequestInProgress = false; // Reset the flag even if object is destroyed
                 return;
             }
-            
-            try {
-                brls::Logger::error("HomeLiveRequest: Failed to fetch live channels: {}", error);
-                this->onError("Failed to fetch live list: " + error);
-                UNSET_REQUEST;
-                isRequestInProgress = false; // Reset the flag on error
-            } catch (...) {
-                brls::Logger::error("HomeLiveRequest::requestLiveList: Exception during error callback");
-                isRequestInProgress = false; // Reset the flag on exception
-            }
+
+            brls::sync([this, isValidFlag, error]() {
+                if (!isValidFlag->load()) {
+                    brls::Logger::debug("HomeLiveRequest::requestLiveList: Object destroyed before UI error callback");
+                    isRequestInProgress = false;
+                    return;
+                }
+
+                try {
+                    brls::Logger::error("HomeLiveRequest: Failed to fetch live channels: {}", error);
+                    this->onError("Failed to fetch live list: " + error);
+                    UNSET_REQUEST;
+                    isRequestInProgress = false; // Reset the flag on error
+                } catch (...) {
+                    brls::Logger::error("HomeLiveRequest::requestLiveList: Exception during error callback");
+                    isRequestInProgress = false; // Reset the flag on exception
+                }
+            });
         }
     );
 }

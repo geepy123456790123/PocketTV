@@ -117,8 +117,6 @@ int main(int argc, char* argv[]) {
                     {"language", brls::Application::getLocale()},
                     {"window", fmt::format("{}x{}", brls::Application::windowWidth, brls::Application::windowHeight)}})
 
-    APPVersion::instance().checkUpdate();
-
     while (brls::Application::mainLoop()) {
     }
 

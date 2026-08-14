@@ -1,38 +1,102 @@
 <brls:Box
-        axis="column"
-        width="auto"
-        height="auto"
+        axis="row"
+        width="100%"
+        height="100%"
         backgroundColor="#050608">
         <brls:Box
-                height="88"
+                width="216"
+                height="100%"
                 axis="column"
-                justifyContent="center"
-                paddingLeft="24"
-                paddingRight="24">
+                paddingLeft="18"
+                paddingRight="14"
+                paddingTop="12"
+                paddingBottom="22"
+                backgroundColor="#07080C">
+                <brls:Image
+                        width="168"
+                        height="168"
+                        marginBottom="10"
+                        scalingType="fit"
+                        image="@res/icon/icon.png" />
+                <RecyclingGrid
+                        grow="1"
+                        width="100%"
+                        height="auto"
+                        spanCount="1"
+                        itemHeight="34"
+                        wireframe="false"
+                        preFetchLine="2"
+                        id="dynamic/up/recyclingGrid" />
                 <brls:Label
-                        fontSize="22"
-                        textColor="#F5F5F7"
-                        text="Live TV" />
-                <brls:Label
-                        marginTop="6"
-                        fontSize="15"
+                        marginTop="8"
+                        fontSize="11"
                         textColor="#AEB3C2"
-                        text="Press + for M3U / EPG settings, Y to search" />
+                        id="home/live/status"
+                        text="" />
         </brls:Box>
-        <RecyclingGrid
+
+        <brls:Box
                 grow="1"
-                paddingLeft="20"
-                paddingRight="20"
-                spanCount="1"
-                itemHeight="70"
-                wireframe="false"
-                preFetchLine="2"
-                id="home/live/recyclingGrid" />
-        <RecyclingGrid
-                width="1"
-                height="1"
-                spanCount="1"
-                itemHeight="1"
-                wireframe="false"
-                id="dynamic/up/recyclingGrid" />
+                height="100%"
+                        axis="column"
+                        backgroundColor="#050608">
+                <brls:Box
+                        height="48"
+                        axis="row"
+                        alignItems="center"
+                        paddingLeft="20"
+                        paddingRight="20"
+                        backgroundColor="#080A0F">
+                        <brls:Label
+                                width="220"
+                                fontSize="14"
+                                textColor="#8D96A6"
+                                text="" />
+                        <brls:Label
+                                id="home/live/header/0"
+                                width="247"
+                                marginLeft="6"
+                                fontSize="14"
+                                textColor="#AEB3C2"
+                                text="" />
+                        <brls:Label
+                                id="home/live/header/1"
+                                width="247"
+                                marginLeft="6"
+                                fontSize="14"
+                                textColor="#AEB3C2"
+                                text="" />
+                        <brls:Label
+                                id="home/live/header/2"
+                                width="247"
+                                marginLeft="6"
+                                fontSize="14"
+                                textColor="#AEB3C2"
+                                text="" />
+                </brls:Box>
+
+                <brls:Box
+                        grow="1"
+                        height="auto"
+                        backgroundColor="#050608">
+                        <AuroraBackground
+                                positionType="absolute"
+                                positionLeft="0"
+                                positionRight="0"
+                                positionTop="0"
+                                positionBottom="0"
+                                width="100%"
+                                height="100%" />
+                        <RecyclingGrid
+                                grow="1"
+                                paddingLeft="20"
+                                paddingRight="20"
+                                paddingTop="4"
+                                spanCount="1"
+                                itemHeight="58"
+                                wireframe="false"
+                                preFetchLine="2"
+                                id="home/live/recyclingGrid" />
+                </brls:Box>
+        </brls:Box>
 </brls:Box>

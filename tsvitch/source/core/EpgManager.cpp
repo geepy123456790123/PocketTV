@@ -41,8 +41,12 @@ std::time_t utcTimestamp(int year, unsigned month, unsigned day, unsigned hour, 
 namespace tsvitch {
 
 void EpgManager::loadFromUrl(const std::string& url) {
+    this->loadFromUrl(url, nullptr);
+}
+
+void EpgManager::loadFromUrl(const std::string& url, std::function<void()> onLoaded) {
     if (url.empty()) return;
-    brls::Threading::async([this, url]() {
+    brls::Threading::async([this, url, onLoaded]() {
         brls::Logger::info("EpgManager: downloading XMLTV data from {}", url);
         auto response = HTTP::get(url, {}, 60000);
         if (response.error || response.status_code < 200 || response.status_code >= 300) {
@@ -50,6 +54,9 @@ void EpgManager::loadFromUrl(const std::string& url) {
             return;
         }
         this->parseXml(response.text);
+        if (onLoaded) {
+            brls::sync(onLoaded);
+        }
     });
 }
 

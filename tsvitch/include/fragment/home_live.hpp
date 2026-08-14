@@ -31,6 +31,11 @@ public:
 
     void onShow() override;
 
+    brls::View* getDefaultFocus() override;
+
+    void draw(NVGcontext* vg, float x, float y, float width, float height, brls::Style style,
+              brls::FrameContext* ctx) override;
+
     void search();
 
     void cancelSearch();
@@ -50,11 +55,14 @@ public:
 private:
     void showChannels(tsvitch::LiveM3u8ListResult channels);
     void pageGuide(int direction);
+    void updateGuideHeader();
 
     int selectedGroupIndex = 0;
     std::time_t guideStart = 0;
     bool isSearchActive    = false;
     bool isInitialLoadInProgress = false;
+    bool guideLeftPressed = false;
+    bool guideRightPressed = false;
     tsvitch::LiveM3u8ListResult channelsList;
     tsvitch::LiveM3u8ListResult visibleChannels;
     std::map<std::string, tsvitch::LiveM3u8ListResult> groupCache;
@@ -64,6 +72,10 @@ private:
     bool hasExitSubscription = false;
     BRLS_BIND(RecyclingGrid, recyclingGrid, "home/live/recyclingGrid");
     BRLS_BIND(RecyclingGrid, upRecyclingGrid, "dynamic/up/recyclingGrid");
+    BRLS_BIND(brls::Label, statusLabel, "home/live/status");
+    BRLS_BIND(brls::Label, guideHeader0, "home/live/header/0");
+    BRLS_BIND(brls::Label, guideHeader1, "home/live/header/1");
+    BRLS_BIND(brls::Label, guideHeader2, "home/live/header/2");
     BRLS_BIND(CustomButton, searchField, "home/search");
     BRLS_BIND(CustomButton, iptvSettingsButton, "home/iptv-settings");
 };
