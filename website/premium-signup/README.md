@@ -54,26 +54,64 @@ npx wrangler secret put STRIPE_SECRET_KEY
 npx wrangler secret put STRIPE_MONTHLY_PRICE_ID
 npx wrangler secret put SUCCESS_URL
 npx wrangler secret put CANCEL_URL
+npx wrangler secret put PREMIUM_PROXY_BASE_URL
 npm run deploy
 ```
 
-`SUCCESS_URL` should point to the page that shows the customer's generated PocketTV Premium M3U/EPG proxy URLs.
+`SUCCESS_URL` should point to the page that shows the customer's generated 8-character PocketTV activation code.
 
 `CANCEL_URL` should point back to this signup page.
+
+Create the `ACTIVATION_CODES` KV namespace and replace `REPLACE_WITH_KV_NAMESPACE_ID` in `workers/signup-api/wrangler.jsonc`.
 
 ## Subscription Fulfillment
 
 After Stripe confirms the subscription:
 
 1. Create or update the customer account.
-2. Generate a PocketTV Premium token.
-3. Store that token with subscription status.
-4. Show the user their proxy-backed M3U and EPG URLs:
+2. Generate a random 8-character activation code, using uppercase letters and digits.
+3. Generate a long random proxy token for that customer.
+4. Store the activation record in the `ACTIVATION_CODES` KV namespace:
+
+```json
+{
+  "status": "active",
+  "proxyToken": "LONG_RANDOM_PROXY_TOKEN",
+  "stripeCustomerId": "cus_...",
+  "stripeSubscriptionId": "sub_..."
+}
+```
+
+Use the key format:
 
 ```text
-https://YOUR_WORKER_DOMAIN/premium/m3u?token=USER_TOKEN
-https://YOUR_WORKER_DOMAIN/premium/epg?token=USER_TOKEN
+code:PK7X2Q9A
 ```
+
+5. Show only the 8-character activation code to the customer.
+
+## App Redemption Contract
+
+PocketTV should call:
+
+```http
+POST /api/redeem-code
+Content-Type: application/json
+
+{ "code": "PK7X2Q9A" }
+```
+
+Expected response:
+
+```json
+{
+  "status": "active",
+  "m3uUrl": "https://YOUR_WORKER_DOMAIN/premium/m3u?token=...",
+  "epgUrl": "https://YOUR_WORKER_DOMAIN/premium/epg?token=..."
+}
+```
+
+PocketTV can save those returned proxy URLs internally so the user never has to type M3U or EPG URLs.
 
 The premium proxy Worker is in `workers/premium-proxy`.
 

@@ -4,6 +4,8 @@ interface Env {
   STRIPE_MONTHLY_PRICE_ID: string;
   SUCCESS_URL: string;
   CANCEL_URL: string;
+  PREMIUM_PROXY_BASE_URL: string;
+  ACTIVATION_CODES: KVNamespace;
 }
 
 const CORS_HEADERS = {
@@ -31,6 +33,9 @@ export default {
 
       if (request.method === "POST" && url.pathname === "/api/create-checkout-session") {
         return createCheckoutSession(request, env);
+      }
+      if (request.method === "POST" && url.pathname === "/api/redeem-code") {
+        return redeemCode(request, env);
       }
 
       throw new HttpError(404, "Not found");
@@ -79,12 +84,35 @@ async function createCheckoutSession(request: Request, env: Env): Promise<Respon
   return json({ url: payload.url });
 }
 
-async function parseJson(request: Request): Promise<{ plan?: string }> {
+async function redeemCode(request: Request, env: Env): Promise<Response> {
+  const body = await parseJson(request);
+  const code = normalizeActivationCode(body.code);
+  if (!code) throw new HttpError(400, "Enter an 8-character activation code");
+  requireEnv(env.PREMIUM_PROXY_BASE_URL, "PREMIUM_PROXY_BASE_URL");
+
+  const record = await env.ACTIVATION_CODES.get<ActivationCodeRecord>(`code:${code}`, "json");
+  if (!record || record.status !== "active") throw new HttpError(404, "Activation code not found");
+
+  const proxyBase = env.PREMIUM_PROXY_BASE_URL.replace(/\/+$/g, "");
+  return json({
+    status: "active",
+    m3uUrl: `${proxyBase}/premium/m3u?token=${encodeURIComponent(record.proxyToken)}`,
+    epgUrl: `${proxyBase}/premium/epg?token=${encodeURIComponent(record.proxyToken)}`
+  });
+}
+
+async function parseJson(request: Request): Promise<{ plan?: string; code?: string }> {
   try {
     return await request.json();
   } catch {
     throw new HttpError(400, "Invalid JSON");
   }
+}
+
+function normalizeActivationCode(value: string | undefined): string {
+  if (!value) return "";
+  const code = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  return /^[A-Z0-9]{8}$/.test(code) ? code : "";
 }
 
 function requireEnv(value: string | undefined, name: string): void {
@@ -110,4 +138,16 @@ interface StripeError {
   error: {
     message: string;
   };
+}
+
+interface ActivationCodeRecord {
+  status: "active" | "canceled" | "past_due";
+  proxyToken: string;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+}
+
+interface KVNamespace {
+  get<T = string>(key: string, type: "json"): Promise<T | null>;
+  get(key: string): Promise<string | null>;
 }
