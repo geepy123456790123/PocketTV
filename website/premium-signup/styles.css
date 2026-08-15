@@ -245,6 +245,39 @@ details:focus-within {
   background: var(--cyan);
 }
 
+.device-showcase {
+  display: grid;
+  grid-template-columns: 0.72fr 1.28fr;
+  gap: 34px;
+  align-items: center;
+  margin-top: -12px;
+  padding: 40px 0 50px;
+}
+
+.device-copy h2 {
+  margin-bottom: 14px;
+  font-size: 34px;
+  line-height: 1.08;
+}
+
+.device-copy p:not(.eyebrow) {
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.device-image-frame {
+  margin: 0;
+}
+
+.device-image-frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+}
+
 .setup-band,
 .details-grid,
 .faq {
@@ -346,6 +379,7 @@ details p {
   }
 
   .hero-grid,
+  .device-showcase,
   .steps,
   .details-grid {
     grid-template-columns: 1fr;
