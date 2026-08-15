@@ -167,6 +167,23 @@ details:focus-within {
   font-size: 13px;
 }
 
+.trust-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.trust-strip span {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 760;
+  background: rgba(255, 255, 255, 0.045);
+}
+
 .plan-panel {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -218,6 +235,33 @@ details:focus-within {
   margin-left: 8px;
   color: var(--muted);
   font-size: 16px;
+}
+
+.code-card {
+  display: grid;
+  gap: 8px;
+  margin-top: 26px;
+  border: 1px solid rgba(125, 220, 255, 0.24);
+  border-radius: 8px;
+  padding: 16px;
+  background:
+    linear-gradient(135deg, rgba(125, 220, 255, 0.12), rgba(157, 244, 200, 0.07)),
+    rgba(255, 255, 255, 0.04);
+}
+
+.code-card span {
+  color: var(--soft);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.code-card strong {
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 27px;
+  letter-spacing: 0.1em;
 }
 
 .feature-list {
@@ -297,10 +341,6 @@ details:focus-within {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 18px;
-}
-
-.details-grid {
-  grid-template-columns: repeat(2, 1fr);
 }
 
 .steps article,
