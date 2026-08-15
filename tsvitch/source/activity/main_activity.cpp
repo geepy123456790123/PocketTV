@@ -31,6 +31,16 @@ MainActivity::~MainActivity() { brls::Logger::debug("del MainActivity"); }
 
 void MainActivity::onContentAvailable() {
     brls::Logger::info("MainActivity::onContentAvailable() called");
+
+    if (this->tabFrame && this->tabFrame->getSidebar()) {
+        this->tabFrame->getSidebar()->setVisibility(brls::Visibility::GONE);
+        this->tabFrame->getSidebar()->setWidth(0);
+        this->tabFrame->getSidebar()->setFocusable(false);
+        for (auto* child : this->tabFrame->getSidebar()->getChildren()) {
+            child->setVisibility(brls::Visibility::GONE);
+            child->setFocusable(false);
+        }
+    }
     
     // Controlla la connettività internet
     bool hasInternet = brls::Application::getPlatform()->hasEthernetConnection() || 

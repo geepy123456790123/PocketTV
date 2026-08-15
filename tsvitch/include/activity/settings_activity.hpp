@@ -48,6 +48,7 @@ private:
     
     // M3U8 Controls
     BRLS_BIND(brls::InputCell, btnM3U8Input, "setting/tools/m3u8/input");
+    BRLS_BIND(brls::InputCell, btnEpgInput, "setting/tools/epg/input");
     BRLS_BIND(brls::InputCell, btnProxyInput, "setting/tools/proxy/input");
     BRLS_BIND(TsVitchSelectorCell, selectorM3U8Timeout, "setting/tools/m3u8/timeout");
     

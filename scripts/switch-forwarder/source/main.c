@@ -4,8 +4,8 @@
 #include <unistd.h>
 
 #define HBMENU_NRO "sdmc:/hbmenu.nro"
-#define DEFAULT_NRO "sdmc:/switch/TsVitch.nro"
-#define APP_STORE_NRO "sdmc:/switch/TsVitch/TsVitch.nro"
+#define DEFAULT_NRO "sdmc:/switch/PocketTV.nro"
+#define APP_STORE_NRO "sdmc:/switch/PocketTV/PocketTV.nro"
 
 const char g_noticeText[] =
     "nx-hbloader " VERSION

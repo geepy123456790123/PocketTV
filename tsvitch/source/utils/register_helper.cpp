@@ -8,6 +8,7 @@
 #include "utils/config_helper.hpp"
 
 #include "view/auto_tab_frame.hpp"
+#include "view/aurora_background.hpp"
 #include "view/video_view.hpp"
 #include "view/user_info.hpp"
 #include "view/text_box.hpp"
@@ -33,6 +34,7 @@
 
 void Register::initCustomView() {
     brls::Application::registerXMLView("AutoTabFrame", AutoTabFrame::create);
+    brls::Application::registerXMLView("AuroraBackground", AuroraBackground::create);
     brls::Application::registerXMLView("RecyclingGrid", RecyclingGrid::create);
     brls::Application::registerXMLView("VideoView", VideoView::create);
     brls::Application::registerXMLView("VideoProfile", VideoProfile::create);

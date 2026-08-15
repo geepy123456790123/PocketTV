@@ -236,62 +236,10 @@ void LiveActivity::startLive() {
 }
 
 void LiveActivity::detectContentType() {
-    // Prima fase: analisi basata su URL e titolo (disponibile sempre)
-    std::string url = liveData.url;
-    std::string title = liveData.title;
-    
-    // Converti in lowercase per il confronto
-    std::transform(url.begin(), url.end(), url.begin(), ::tolower);
-    std::transform(title.begin(), title.end(), title.begin(), ::tolower);
-    
-    // Determina il tipo basandosi su URL e titolo
-    bool isLiveStream = true; // Default: assume live stream
-    
-    // Indicatori di video on-demand negli URL
-    if (url.find(".mp4") != std::string::npos ||
-        url.find(".mkv") != std::string::npos ||
-        url.find(".avi") != std::string::npos ||
-        url.find("video") != std::string::npos) {
-        isLiveStream = false;
-    }
-    // Indicatori di live stream negli URL e titoli
-    else if (url.find("live") != std::string::npos || 
-             url.find("stream") != std::string::npos ||
-             url.find(".m3u8") != std::string::npos ||
-             url.find(".ts") != std::string::npos ||
-             title.find("live") != std::string::npos ||
-             title.find("diretta") != std::string::npos) {
-        isLiveStream = true;
-    }
-    
-    // Seconda fase: verifica con durata MPV (se disponibile)
-    double duration = MPVCore::instance().duration;
-    brls::Logger::debug("LiveActivity: detectContentType - duration: {}", duration);
-    
-    // Se MPV è già caricato, usa la durata per verificare/correggere la detection
-    if (duration > 0) {
-        // Se ha durata definita, è sicuramente un video
-        isLiveStream = false;
-        brls::Logger::debug("LiveActivity: MPV duration {} confirms VIDEO mode", duration);
-    } else if (duration == 0 && MPVCore::instance().isPlaying()) {
-        // Se sta riproducendo ma durata è 0, conferma che è live
-        isLiveStream = true;
-        brls::Logger::debug("LiveActivity: MPV duration 0 confirms LIVE mode");
-    }
-    // Altrimenti mantiene la detection basata su URL/titolo fatta prima
-    
-    brls::Logger::debug("LiveActivity: Content detected as: {}", isLiveStream ? "LIVE STREAM" : "VIDEO WITH DURATION");
-    
-    // Configura l'interfaccia in base al tipo di contenuto
-    if (isLiveStream) {
-        this->video->setLiveMode();
-        this->video->hideVideoProgressSlider();
-        brls::Logger::debug("LiveActivity: Configured for live stream mode");
-    } else {
-        this->video->setVideoMode();
-        this->video->showVideoProgressSlider();
-        brls::Logger::debug("LiveActivity: Configured for video mode with progress bar");
-    }
+    brls::Logger::debug("LiveActivity: forcing live stream UI for guide channel playback");
+    this->video->setLiveMode();
+    this->video->hideVideoProgressSlider();
+    this->video->disableProgressSliderSeek(true);
 }
 
 void LiveActivity::startDownload() {

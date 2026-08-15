@@ -288,6 +288,13 @@ void AutoTabFrame::setDefaultTabIndex(size_t index) { this->sidebar->setDefaultF
 
 size_t AutoTabFrame::getDefaultTabIndex() { return this->sidebar->getDefaultFocusedIndex(); }
 
+brls::View* AutoTabFrame::getDefaultFocus() {
+    if (this->activeTab) {
+        if (auto* focus = this->activeTab->getDefaultFocus()) return focus;
+    }
+    return brls::Box::getDefaultFocus();
+}
+
 brls::View* AutoTabFrame::getNextFocus(brls::FocusDirection direction, brls::View* currentView) {
     if (currentView != this->sidebar) {
         if (disableNavigationDown && direction == brls::FocusDirection::DOWN) {

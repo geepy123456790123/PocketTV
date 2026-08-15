@@ -1,4 +1,8 @@
 #include <utility>
+#include <algorithm>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
 #include <unordered_map>
 #include <borealis/core/touch/tap_gesture.hpp>
 #include <borealis/views/dialog.hpp>
@@ -20,25 +24,73 @@
 #include "core/DownloadManager.hpp"
 #include "utils/stream_helper.hpp"
 #include "core/DownloadProgressManager.hpp"
+#include "core/EpgManager.hpp"
 
 #include "utils/config_helper.hpp"
 
+#ifdef BUILTIN_NSP
+#include "nspmini.hpp"
+#endif
+
 using namespace brls::literals;
+
+namespace {
+
+std::string formatGuideTime(std::time_t value) {
+    std::tm local{};
+#ifdef _WIN32
+    localtime_s(&local, &value);
+#else
+    localtime_r(&value, &local);
+#endif
+    std::ostringstream out;
+    out << std::put_time(&local, "%H:%M");
+    return out.str();
+}
+
+std::string formatGuideHeaderTime(std::time_t value) {
+    std::tm local{};
+#ifdef _WIN32
+    localtime_s(&local, &value);
+#else
+    localtime_r(&value, &local);
+#endif
+    int hour = local.tm_hour % 12;
+    if (hour == 0) hour = 12;
+    return fmt::format("{}:{:02d}{}", hour, local.tm_min, local.tm_hour < 12 ? "am" : "pm");
+}
+
+std::string programmeText(const tsvitch::EpgProgramme& programme, std::time_t slotStart, std::time_t slotStop) {
+    if (programme.title.empty()) return "Live TV";
+    return fmt::format("{}\n{}-{}", programme.title, formatGuideTime(std::max(programme.start, slotStart)),
+                       formatGuideTime(std::min(programme.stop, slotStop)));
+}
+
+constexpr float GUIDE_SLOT_WIDTH = 247.0f;
+constexpr float GUIDE_SLOT_GAP   = 6.0f;
+constexpr int GUIDE_SLOT_SECONDS = 30 * 60;
+
+}  // namespace
 
 class DynamicGroupChannels : public RecyclingGridItem {
 public:
     explicit DynamicGroupChannels(const std::string& xml) {
         this->inflateFromXMLRes(xml);
-        auto theme    = brls::Application::getTheme();
-        selectedColor = theme.getColor("color/tsvitch");
-        fontColor     = theme.getColor("brls/text");
+        fontColor     = brls::Application::getTheme().getColor("brls/text");
+        selectedColor = nvgRGB(125, 220, 255);
     }
 
     void setTitle(const std::string& title) { this->labelTitle->setText(title); }
 
-    void setSelected(bool selected) { this->labelTitle->setTextColor(selected ? selectedColor : fontColor); }
+    void setSelected(bool selected) { this->labelTitle->setTextColor(primary ? fontColor : (selected ? selectedColor : fontColor)); }
+
+    void setPrimary(bool primary) {
+        this->primary = primary;
+        this->labelTitle->setFontSize(primary ? 19 : 17);
+    }
 
     void prepareForReuse() override {
+        this->primary = false;
         this->labelTitle->setText("");
         this->labelTitle->setTextColor(fontColor);
     }
@@ -53,6 +105,7 @@ private:
     BRLS_BIND(brls::Label, labelTitle, "title");
     NVGcolor selectedColor{};
     NVGcolor fontColor{};
+    bool primary = false;
 };
 
 class DataSourceUpList : public RecyclingGridDataSource {
@@ -64,6 +117,7 @@ public:
     RecyclingGridItem* cellForRow(RecyclingGrid* recycler, size_t index) override {
         DynamicGroupChannels* item = (DynamicGroupChannels*)recycler->dequeueReusableCell("Cell");
         item->setTitle(this->list[index]);
+        item->setPrimary(this->list[index] == "Favorites" || this->list[index] == "All Channels");
         item->setSelected(index == selectedIndex);  // Imposta sempre la selezione!
         return item;
     }
@@ -74,6 +128,11 @@ public:
         brls::Logger::debug("setSelectedIndex: {}", index);
         if (index >= list.size()) return;
         selectedIndex = index;
+        std::vector<RecyclingGridItem*>& items = recycler->getGridItems();
+        for (auto& i : items) {
+            auto* cell = dynamic_cast<DynamicGroupChannels*>(i);
+            if (cell) cell->setSelected(false);
+        }
         auto* item    = dynamic_cast<DynamicGroupChannels*>(recycler->getGridItemByIndex(index));
         if (!item) return;
         item->setSelected(true);
@@ -185,22 +244,239 @@ protected:
     NVGcolor fontColor     = brls::Application::getTheme().getColor("brls/text");
 };
 
+const std::string LiveGuideRowCellXML = R"xml(
+<brls:Box
+        width="auto"
+        height="58"
+        focusable="true"
+        paddingLeft="8"
+        paddingRight="8"
+        paddingTop="2"
+        paddingBottom="2"
+        alignItems="center"
+        backgroundColor="#15171C"
+        highlightCornerRadius="12"
+        cornerRadius="8">
+
+    <brls:Box width="220" height="46" axis="row" alignItems="center">
+        <brls:Image
+                id="guide/logo"
+                scalingType="fit"
+                marginRight="10"
+                width="34"
+                height="31"/>
+        <brls:Label
+                id="guide/logo/fallback"
+                positionType="absolute"
+                positionLeft="8"
+                positionTop="16"
+                width="34"
+                height="14"
+                fontSize="7"
+                textColor="#F8FAFC"
+                horizontalAlign="center"
+                singleLine="true"
+                text=""/>
+        <brls:Label
+                id="guide/heart"
+                positionType="absolute"
+                positionLeft="28"
+                positionTop="5"
+                width="12"
+                height="12"
+                fontSize="9"
+                textColor="#FF375F"
+                text=""/>
+        <brls:Box width="164" height="auto" axis="column">
+            <brls:Label
+                    id="guide/channel"
+                    width="164"
+                    height="auto"
+                    fontSize="16"
+                    textColor="#F8FAFC"
+                    singleLine="true"/>
+            <brls:Label
+                    id="guide/group"
+                    width="164"
+                    height="auto"
+                    fontSize="13"
+                    textColor="#A7B0BA"
+                    singleLine="true"/>
+        </brls:Box>
+    </brls:Box>
+
+    <brls:Label id="guide/slot0" width="247" height="46" marginLeft="6" fontSize="15" textColor="#F8FAFC" backgroundColor="#20232B" cornerRadius="8"/>
+    <brls:Label id="guide/slot1" width="247" height="46" marginLeft="6" fontSize="15" textColor="#F8FAFC" backgroundColor="#20232B" cornerRadius="8"/>
+    <brls:Label id="guide/slot2" width="247" height="46" marginLeft="6" fontSize="15" textColor="#F8FAFC" backgroundColor="#20232B" cornerRadius="8"/>
+</brls:Box>
+)xml";
+
+const std::string LiveGuideSectionCellXML = R"xml(
+<brls:Box
+        width="auto"
+        height="42"
+        focusable="false"
+        paddingLeft="12"
+        paddingRight="12"
+        alignItems="center"
+        backgroundColor="#050608">
+    <brls:Label
+            id="guide/section/title"
+            width="auto"
+            height="auto"
+            fontSize="22"
+            textColor="#F8FAFC"
+            singleLine="true"/>
+</brls:Box>
+)xml";
+
+class LiveGuideRowCell : public RecyclingGridItem {
+public:
+    LiveGuideRowCell() { this->inflateFromXMLString(LiveGuideRowCellXML); }
+
+    void setChannel(const tsvitch::LiveM3u8& channel, std::time_t guideStart) {
+        this->channel = channel;
+        this->heartLabel->setText(FavoriteManager::get()->isFavorite(channel.url) ? "♥" : "");
+        this->channelLabel->setText(channel.title);
+        this->groupLabel->setText(channel.groupTitle.empty() ? "Live TV" : channel.groupTitle);
+
+        std::string logoUrl = channel.logo.empty() ? tsvitch::EpgManager::instance().channelIcon(channel.id) : channel.logo;
+        if (logoUrl.empty()) {
+            this->logo->setImageFromRes("pictures/video-card-bg.png");
+            this->logoFallbackLabel->setText(this->fallbackLogoText(channel));
+        } else {
+            this->logoFallbackLabel->setText("");
+            ImageHelper::with(logo)->loadWithDiskCache(logoUrl);
+        }
+
+        this->renderProgrammeSlots(guideStart);
+    }
+
+    void prepareForReuse() override {
+        this->channelLabel->setText("");
+        this->groupLabel->setText("");
+        this->heartLabel->setText("");
+        this->logo->setImageFromRes("pictures/video-card-bg.png");
+        this->logoFallbackLabel->setText("");
+        this->resetProgrammeSlots();
+    }
+
+    void cacheForReuse() override { ImageHelper::clear(this->logo); }
+
+    tsvitch::LiveM3u8 getChannel() const { return channel; }
+
+    static RecyclingGridItem* create() { return new LiveGuideRowCell(); }
+
+private:
+    void resetProgrammeSlots() {
+        brls::Label* slots[] = {slot0, slot1, slot2};
+        for (auto* slot : slots) {
+            slot->setVisibility(brls::Visibility::VISIBLE);
+            slot->setWidth(GUIDE_SLOT_WIDTH);
+            slot->setText("");
+        }
+    }
+
+    void renderProgrammeSlots(std::time_t guideStart) {
+        this->resetProgrammeSlots();
+
+        brls::Label* slots[] = {slot0, slot1, slot2};
+        auto windowStop      = guideStart + (3 * GUIDE_SLOT_SECONDS);
+        int slot             = 0;
+
+        while (slot < 3) {
+            auto slotStart  = guideStart + (slot * GUIDE_SLOT_SECONDS);
+            auto slotStop   = slotStart + GUIDE_SLOT_SECONDS;
+            auto programmes = tsvitch::EpgManager::instance().window(channel.id, slotStart, slotStop);
+
+            if (programmes.empty()) {
+                slots[slot]->setText(fmt::format("{}\nLive TV", formatGuideTime(slotStart)));
+                slot++;
+                continue;
+            }
+
+            const auto& programme = programmes.front();
+            auto visibleStop      = std::min(programme.stop, windowStop);
+            int endSlot           = static_cast<int>((visibleStop - guideStart + GUIDE_SLOT_SECONDS - 1) / GUIDE_SLOT_SECONDS);
+            endSlot               = std::max(slot + 1, std::min(3, endSlot));
+            int span              = endSlot - slot;
+
+            slots[slot]->setWidth((GUIDE_SLOT_WIDTH * span) + (GUIDE_SLOT_GAP * (span - 1)));
+            slots[slot]->setText(programmeText(programme, guideStart, windowStop));
+            for (int hidden = slot + 1; hidden < endSlot; ++hidden) {
+                slots[hidden]->setVisibility(brls::Visibility::GONE);
+            }
+            slot = endSlot;
+        }
+    }
+
+    std::string fallbackLogoText(const tsvitch::LiveM3u8& channel) {
+        std::string source = channel.chno.empty() ? channel.title : channel.chno;
+        std::string out;
+        for (char c : source) {
+            if (std::isalnum(static_cast<unsigned char>(c))) out.push_back(static_cast<char>(std::toupper(static_cast<unsigned char>(c))));
+            if (out.size() >= 4) break;
+        }
+        return out.empty() ? "TV" : out;
+    }
+
+    tsvitch::LiveM3u8 channel;
+    BRLS_BIND(brls::Image, logo, "guide/logo");
+    BRLS_BIND(brls::Label, logoFallbackLabel, "guide/logo/fallback");
+    BRLS_BIND(brls::Label, heartLabel, "guide/heart");
+    BRLS_BIND(brls::Label, channelLabel, "guide/channel");
+    BRLS_BIND(brls::Label, groupLabel, "guide/group");
+    BRLS_BIND(brls::Label, slot0, "guide/slot0");
+    BRLS_BIND(brls::Label, slot1, "guide/slot1");
+    BRLS_BIND(brls::Label, slot2, "guide/slot2");
+};
+
+class LiveGuideSectionCell : public RecyclingGridItem {
+public:
+    LiveGuideSectionCell() { this->inflateFromXMLString(LiveGuideSectionCellXML); }
+
+    void setTitle(const std::string& title) { this->title->setText(title); }
+
+    void prepareForReuse() override { this->title->setText(""); }
+
+    void cacheForReuse() override {}
+
+    static RecyclingGridItem* create() { return new LiveGuideSectionCell(); }
+
+private:
+    BRLS_BIND(brls::Label, title, "guide/section/title");
+};
+
+struct LiveGuideDisplayRow {
+    bool section = false;
+    std::string title;
+    tsvitch::LiveM3u8 channel;
+};
+
 class DataSourceLiveVideoList : public RecyclingGridDataSource {
 public:
-    explicit DataSourceLiveVideoList(const tsvitch::LiveM3u8ListResult& result) : videoList(result) {}
+    explicit DataSourceLiveVideoList(const tsvitch::LiveM3u8ListResult& result, std::time_t guideStart = 0)
+        : videoList(result), guideStart(guideStart) {
+        this->buildRows();
+    }
     RecyclingGridItem* cellForRow(RecyclingGrid* recycler, size_t index) override {
-        tsvitch::LiveM3u8& r = this->videoList[index];
-        // brls::Logger::info("cellForRow: {} [{}]", r.title, index);
-        RecyclingGridItemLiveVideoCard* item = (RecyclingGridItemLiveVideoCard*)recycler->dequeueReusableCell("Cell");
-        item->setChannel(r);
+        auto& row = this->displayRows[index];
+        if (row.section) {
+            auto* item = (LiveGuideSectionCell*)recycler->dequeueReusableCell("Section");
+            item->setTitle(row.title);
+            return item;
+        }
+        auto* item = (LiveGuideRowCell*)recycler->dequeueReusableCell("Cell");
+        item->setChannel(row.channel, this->guideStart);
         return item;
     }
 
-    size_t getItemCount() override { return videoList.size(); }
+    size_t getItemCount() override { return displayRows.size(); }
 
     void onItemSelected(RecyclingGrid* recycler, size_t index) override {
-        HistoryManager::get()->add(videoList[index]);
-        Intent::openLive(videoList, index, [recycler]() { recycler->reloadData(); });
+        if (index >= displayRows.size() || displayRows[index].section) return;
+        HistoryManager::get()->add(displayRows[index].channel);
+        Intent::openLive(playList, rowToPlayIndex[index], [recycler]() { recycler->reloadData(); });
     }
 
     void appendData(const tsvitch::LiveM3u8ListResult& data) {
@@ -210,7 +486,36 @@ public:
     void clearData() override { this->videoList.clear(); }
 
 private:
+    void buildRows() {
+        tsvitch::LiveM3u8ListResult favorites;
+        tsvitch::LiveM3u8ListResult allChannels;
+
+        for (const auto& channel : videoList) {
+            if (FavoriteManager::get()->isFavorite(channel.url)) favorites.push_back(channel);
+            allChannels.push_back(channel);
+        }
+
+        if (!favorites.empty()) {
+            displayRows.push_back({true, "Favorites", {}});
+            for (const auto& channel : favorites) addChannelRow(channel);
+        }
+
+        displayRows.push_back({true, "All Channels", {}});
+        for (const auto& channel : allChannels) addChannelRow(channel);
+    }
+
+    void addChannelRow(const tsvitch::LiveM3u8& channel) {
+        size_t rowIndex = displayRows.size();
+        displayRows.push_back({false, "", channel});
+        rowToPlayIndex[rowIndex] = playList.size();
+        playList.push_back(channel);
+    }
+
     tsvitch::LiveM3u8ListResult videoList;
+    tsvitch::LiveM3u8ListResult playList;
+    std::vector<LiveGuideDisplayRow> displayRows;
+    std::unordered_map<size_t, size_t> rowToPlayIndex;
+    std::time_t guideStart = 0;
 };
 
 HomeLive::HomeLive() {
@@ -229,15 +534,49 @@ HomeLive::HomeLive() {
     });
     hasExitSubscription = true;
     
-    recyclingGrid->registerCell("Cell", []() { return RecyclingGridItemLiveVideoCard::create(); });
+    recyclingGrid->registerCell("Cell", []() { return LiveGuideRowCell::create(); });
+    recyclingGrid->registerCell("Section", []() { return LiveGuideSectionCell::create(); });
 
     upRecyclingGrid->registerCell("Cell", []() { return DynamicGroupChannels::create(); });
+    upRecyclingGrid->setVisibility(brls::Visibility::GONE);
+
+    this->registerAction("M3U / EPG", brls::BUTTON_START, [this](...) {
+        this->openLiveSettings();
+        return true;
+    });
+
+    if (this->setupM3uButton) {
+        this->setupM3uButton->registerClickAction([this](...) -> bool {
+            this->openLiveSettings();
+            return true;
+        });
+    }
+    if (this->setupPremiumButton) {
+        this->setupPremiumButton->registerClickAction([this](...) -> bool {
+            this->openPremiumInfo();
+            return true;
+        });
+    }
+    if (this->setupForwarderButton) {
+        this->setupForwarderButton->registerClickAction([this](...) -> bool {
+            this->installForwarder();
+            return true;
+        });
+    }
+
+    auto now = std::time(nullptr);
+    guideStart = now - (now % (30 * 60));
+    tsvitch::EpgManager::instance().loadFromUrl(ProgramConfig::instance().getEpgUrl(), [this]() {
+        if (this->recyclingGrid) this->recyclingGrid->reloadData();
+    });
 
     // Sottoscrivi all'evento di cambio M3U8
     OnM3U8UrlChanged.subscribe([this]() {
         brls::Logger::debug("OnM3U8UrlChanged: showing skeleton and requesting channel list");
         // Mostra lo skeleton per indicare che stiamo caricando
         brls::Threading::sync([this]() {
+            hideInitialSetup();
+            statusLabel->setText("Refreshing PocketTV guide...");
             recyclingGrid->showSkeleton();
             upRecyclingGrid->setVisibility(brls::Visibility::GONE);
         });
@@ -253,6 +592,8 @@ HomeLive::HomeLive() {
         brls::Logger::debug("OnIPTVModeChanged: showing skeleton and requesting channel list");
         // Mostra lo skeleton per indicare che stiamo caricando
         brls::Threading::sync([this]() {
+            hideInitialSetup();
+            statusLabel->setText("Loading PocketTV channels...");
             recyclingGrid->showSkeleton();
             upRecyclingGrid->setVisibility(brls::Visibility::GONE);
         });
@@ -269,6 +610,8 @@ HomeLive::HomeLive() {
                            xtreamData.url, xtreamData.username);
         // Mostra lo skeleton per indicare che stiamo caricando
         brls::Threading::sync([this]() {
+            hideInitialSetup();
+            statusLabel->setText("Loading Xtream channels...");
             recyclingGrid->showSkeleton();
             upRecyclingGrid->setVisibility(brls::Visibility::GONE);
         });
@@ -281,6 +624,7 @@ HomeLive::HomeLive() {
     
     // Mostra sempre lo skeleton all'inizio per UI non-bloccante
     brls::Logger::debug("HomeLive constructor: Showing skeleton for non-blocking UI");
+    statusLabel->setText("Loading PocketTV...");
     recyclingGrid->showSkeleton();
     upRecyclingGrid->setVisibility(brls::Visibility::GONE);
     
@@ -313,9 +657,11 @@ HomeLive::HomeLive() {
                 
                 if (!cachedChannels.empty()) {
                     brls::Logger::info("HomeLive: Using valid Xtream cache with {} channels", cachedChannels.size());
+                    statusLabel->setText(fmt::format("Loaded {} cached channels", cachedChannels.size()));
                     this->onLiveList(cachedChannels, false);
                 } else {
                     brls::Logger::info("HomeLive: Xtream cache invalid/empty, requesting fresh data");
+                    statusLabel->setText("Downloading Xtream channels...");
                     this->requestLiveList();
                 }
                 isInitialLoadInProgress = false; // Reset flag quando completato
@@ -347,9 +693,14 @@ HomeLive::HomeLive() {
                 
                 if (!cachedChannels.empty()) {
                     brls::Logger::info("HomeLive constructor: Using valid M3U8 cache ({} channels found)", cachedChannels.size());
+                    statusLabel->setText(fmt::format("Loaded {} cached channels", cachedChannels.size()));
                     this->onLiveList(cachedChannels, false);
+                } else if (ProgramConfig::instance().getM3U8Url().empty()) {
+                    brls::Logger::info("HomeLive constructor: no M3U8 URL configured");
+                    this->showInitialSetup();
                 } else {
                     brls::Logger::info("HomeLive constructor: M3U8 cache is invalid or empty, requesting fresh channels");
+                    statusLabel->setText("Downloading M3U playlist...");
                     this->requestLiveList();
                 }
                 isInitialLoadInProgress = false; // Reset flag quando completato
@@ -361,6 +712,7 @@ HomeLive::HomeLive() {
 void HomeLive::onError(const std::string& error) {
     brls::Logger::error("Fragment HomeLive: onError: {}", error);
     brls::sync([this, error]() {
+        this->statusLabel->setText(error);
         this->recyclingGrid->setError(error);
         this->upRecyclingGrid->setVisibility(brls::Visibility::GONE);
     });
@@ -373,12 +725,94 @@ void HomeLive::onError(const std::string& error) {
 
 void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
     brls::Logger::info("Fragment HomeLive: onLiveList - received {} channels", result.size());
+    statusLabel->setText(fmt::format("Preparing {} channels", result.size()));
     if (result.empty()) {
+        statusLabel->setText("No channels found in playlist");
         recyclingGrid->setEmpty();
         upRecyclingGrid->setVisibility(brls::Visibility::GONE);
+        hideInitialSetup();
         return;
     }
 
+    this->hideInitialSetup();
+    this->channelsList = std::move(result);
+    this->updateGuideHeader();
+
+    std::unordered_map<std::string, std::vector<size_t>> groupIndices;
+    groupIndices.reserve(100);
+    for (size_t i = 0; i < this->channelsList.size(); ++i) {
+        auto groupTitle = this->channelsList[i].groupTitle.empty() ? std::string("Uncategorized") : this->channelsList[i].groupTitle;
+        groupIndices[groupTitle].push_back(i);
+    }
+
+    std::vector<std::string> groupTitles;
+    groupTitles.reserve(groupIndices.size() + 2);
+    groupTitles.push_back("Favorites");
+    groupTitles.push_back("All Channels");
+    for (const auto& pair : groupIndices) {
+        groupTitles.push_back(pair.first);
+    }
+    std::sort(groupTitles.begin() + 2, groupTitles.end());
+
+    {
+        std::lock_guard<std::mutex> lock(groupCacheMutex);
+        groupCache.clear();
+        groupCache["All Channels"] = this->channelsList;
+        groupCache["Favorites"]    = FavoriteManager::get()->getFavorites();
+        for (const auto& pair : groupIndices) {
+            tsvitch::LiveM3u8ListResult filtered;
+            filtered.reserve(pair.second.size());
+            for (size_t idx : pair.second) {
+                filtered.push_back(this->channelsList[idx]);
+            }
+            groupCache[pair.first] = std::move(filtered);
+        }
+    }
+
+    upRecyclingGrid->setVisibility(brls::Visibility::VISIBLE);
+    auto* upList = new DataSourceUpList(groupTitles, [this](const std::string& group) {
+        tsvitch::LiveM3u8ListResult filtered;
+        {
+            std::lock_guard<std::mutex> lock(groupCacheMutex);
+            if (group == "Favorites") {
+                groupCache["Favorites"] = FavoriteManager::get()->getFavorites();
+            }
+            if (groupCache.count(group)) filtered = groupCache[group];
+        }
+        if (filtered.empty()) {
+            this->visibleChannels.clear();
+            this->recyclingGrid->setEmpty(group == "Favorites" ? "No favorite channels yet" : "No channels in this group");
+            return;
+        }
+        this->showChannels(std::move(filtered));
+    });
+    upRecyclingGrid->setDataSource(upList);
+    this->selectedGroupIndex = 1;
+    this->selectGroupIndex(1);
+    upRecyclingGrid->setDefaultCellFocus(1);
+    if (auto* focus = upRecyclingGrid->getDefaultFocus()) {
+        brls::Application::giveFocus(focus);
+    }
+    brls::delay(10, [this]() {
+        if (this->upRecyclingGrid && this->upRecyclingGrid->getVisibility() == brls::Visibility::VISIBLE) {
+            this->upRecyclingGrid->setDefaultCellFocus(this->selectedGroupIndex);
+            brls::Application::giveFocus(this->upRecyclingGrid->getDefaultFocus());
+        }
+    });
+    statusLabel->setText(fmt::format("{} channels - logos load as available", this->channelsList.size()));
+
+    if (firstLoad) {
+        auto toSave = this->channelsList;
+        brls::Threading::async([data = std::move(toSave)]() {
+            try {
+                ChannelManager::get()->saveWithTimestamp(data);
+            } catch (const std::exception& e) {
+                brls::Logger::error("HomeLive: Exception in async saveWithTimestamp: {}", e.what());
+            } catch (...) {
+                brls::Logger::error("HomeLive: Unknown exception in async saveWithTimestamp");
+            }
+        });
+    }
     this->registerAction("hints/back"_i18n, brls::BUTTON_B, [this](...) {
         if (isSearchActive) {
             this->cancelSearch();
@@ -396,6 +830,13 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
         return true;
     });
 
+    if (this->iptvSettingsButton) {
+        this->iptvSettingsButton->registerClickAction([this](brls::View* view) -> bool {
+            this->openLiveSettings();
+            return true;
+        });
+    }
+
     this->registerAction("hints/toggle_favorite"_i18n, brls::BUTTON_X, [this](...) {
         this->toggleFavorite();
         return true;
@@ -406,159 +847,28 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
         return true;
     });
 
-    // Salva channelsList SUBITO per accesso thread-safe
-    this->channelsList = std::move(result); // Move invece di copy!
-    
-    // Fai il grouping e UI update SUL MAIN THREAD per evitare il delay di 36s del brls::sync()
-    // Meglio bloccare 600ms che aspettare 36 secondi!
-    auto isValidFlag = validityFlag;
-    brls::sync([this, isValidFlag, firstLoad]() {
-        if (!isValidFlag->load()) return;
-        
-        auto grouping_start = std::chrono::high_resolution_clock::now();
-        
-        // Raggruppa i canali per groupTitle - unica passata
-        std::unordered_map<std::string, std::vector<size_t>> groupIndices;
-        groupIndices.reserve(100);
-        
-        for (size_t i = 0; i < this->channelsList.size(); ++i) {
-            std::string groupTitle = this->channelsList[i].groupTitle;
-            // Assegna un nome di default ai canali senza gruppo
-            if (groupTitle.empty()) {
-                groupTitle = "Uncategorized";
-            }
-            groupIndices[groupTitle].push_back(i);
-        }
-        
-        std::vector<std::string> groupTitles;
-        groupTitles.reserve(groupIndices.size());
-        for (const auto& pair : groupIndices) {
-            groupTitles.push_back(pair.first);
-        }
-        
-        // Ordina alfabeticamente
-        std::sort(groupTitles.begin(), groupTitles.end());
-        
-        auto grouping_end = std::chrono::high_resolution_clock::now();
-        auto grouping_duration = std::chrono::duration_cast<std::chrono::milliseconds>(grouping_end - grouping_start);
-        brls::Logger::info("HomeLive: Grouping completed in {}ms - Found {} groups", grouping_duration.count(), groupTitles.size());
-        
-        // Leggi lastIndex dal config
-        int lastIndex = ProgramConfig::instance().getSettingItem(SettingItem::GROUP_SELECTED_INDEX, 0);
-        if (lastIndex >= (int)groupTitles.size()) lastIndex = 0;
-        std::string selectedGroup = groupTitles.empty() ? "" : groupTitles[lastIndex];
-        
-        // Prepara il gruppo selezionato
-        tsvitch::LiveM3u8ListResult filtered;
-        if (!selectedGroup.empty() && groupIndices.count(selectedGroup)) {
-            const auto& indices = groupIndices[selectedGroup];
-            filtered.reserve(indices.size());
-            for (size_t idx : indices) {
-                filtered.push_back(this->channelsList[idx]);
-            }
-        }
-        
-        brls::Logger::info("HomeLive: Selected group '{}' with {} channels", selectedGroup, filtered.size());
-        
-        // Cache il gruppo selezionato
-        {
-            std::lock_guard<std::mutex> lock(groupCacheMutex);
-            groupCache.clear();
-            groupCache[selectedGroup] = filtered;
-        }
-        
-        // Imposta il DataSource principale (già sul main thread, no brls::sync necessario)
-        brls::Logger::info("HomeLive: Setting DataSource with {} filtered channels", filtered.size());
-        if (filtered.empty())
-            recyclingGrid->setEmpty();
-        else
-            recyclingGrid->setDataSource(new DataSourceLiveVideoList(std::move(filtered)));
-        
-        // Setup UI gruppi
-        if (groupTitles.size() > 1) {
-            upRecyclingGrid->setVisibility(brls::Visibility::VISIBLE);
-            auto* upList = new DataSourceUpList(groupTitles, [this](const std::string& group) {
-                tsvitch::LiveM3u8ListResult filtered;
-                {
-                    std::lock_guard<std::mutex> lock(groupCacheMutex);
-                    if (groupCache.count(group)) {
-                        filtered = groupCache[group];
-                        brls::Logger::debug("HomeLive: Using cached group '{}' with {} channels", group, filtered.size());
-                    } else {
-                        brls::Logger::warning("HomeLive: Cache miss for group '{}', filtering on-demand", group);
-                        for (const auto& item : this->channelsList) {
-                            if (item.groupTitle == group) filtered.push_back(item);
-                        }
-                        groupCache[group] = filtered;
-                    }
-                }
-                if (filtered.empty())
-                    recyclingGrid->setEmpty();
-                else
-                    recyclingGrid->setDataSource(new DataSourceLiveVideoList(filtered));
-            });
-            upRecyclingGrid->setDataSource(upList);
-            this->selectGroupIndex(static_cast<size_t>(lastIndex));
-        } else {
-            upRecyclingGrid->setVisibility(brls::Visibility::GONE);
-        }
-        
-        // Precarica gli altri gruppi in background - IN UN THREAD ASYNC SEPARATO per non bloccare l'UI
-        brls::Threading::async([this, groupTitles = std::move(groupTitles), groupIndices = std::move(groupIndices), 
-                                selectedGroup, isValidFlag]() {
-            if (groupTitles.size() <= 1) return;
-            
-            auto preload_start = std::chrono::high_resolution_clock::now();
-            size_t groupsProcessed = 0;
-            
-            for (const auto& group : groupTitles) {
-                if (!isValidFlag->load()) return;
-                if (group == selectedGroup) continue;
-                
-                tsvitch::LiveM3u8ListResult filteredBg;
-                if (groupIndices.count(group)) {
-                    const auto& indices = groupIndices.at(group);
-                    filteredBg.reserve(indices.size());
-                    
-                    for (size_t idx : indices) {
-                        if (idx < this->channelsList.size()) {
-                            filteredBg.push_back(this->channelsList[idx]);
-                        }
-                    }
-                }
-                
-                {
-                    std::lock_guard<std::mutex> lock(groupCacheMutex);
-                    groupCache[group] = std::move(filteredBg);
-                }
-                
-                groupsProcessed++;
-                if (groupsProcessed % 10 == 0) {
-                    std::this_thread::yield();
-                }
-            }
-            
-            auto preload_end = std::chrono::high_resolution_clock::now();
-            auto preload_duration = std::chrono::duration_cast<std::chrono::milliseconds>(preload_end - preload_start);
-            brls::Logger::info("HomeLive: Background group preloading completed in {}ms ({} groups)", preload_duration.count(), groupsProcessed);
-        });
-        
-        // Salva in background se firstLoad (non blocca UI)
-        if (firstLoad) {
-            brls::Logger::info("HomeLive: First load detected, will save {} channels with timestamp (async)", this->channelsList.size());
-            auto toSave = this->channelsList;
-            brls::Threading::async([data = std::move(toSave)]() {
-                try {
-                    ChannelManager::get()->saveWithTimestamp(data);
-                    brls::Logger::info("HomeLive: Async saveWithTimestamp completed successfully");
-                } catch (const std::exception& e) {
-                    brls::Logger::error("HomeLive: Exception in async saveWithTimestamp: {}", e.what());
-                } catch (...) {
-                    brls::Logger::error("HomeLive: Unknown exception in async saveWithTimestamp");
-                }
-            });
-        }
+    this->registerAction("Guide -30m", brls::BUTTON_LB, [this](...) {
+        this->pageGuide(-1);
+        return true;
     });
+
+    this->registerAction("Guide +30m", brls::BUTTON_RB, [this](...) {
+        this->pageGuide(1);
+        return true;
+    });
+
+    statusLabel->setText(fmt::format("{} channels - logos load as available", this->channelsList.size()));
+    return;
+}
+
+brls::View* HomeLive::getDefaultFocus() {
+    if (this->setupPanel && this->setupPanel->getVisibility() == brls::Visibility::VISIBLE && this->setupM3uButton) {
+        return this->setupM3uButton;
+    }
+    if (this->upRecyclingGrid && this->upRecyclingGrid->getVisibility() == brls::Visibility::VISIBLE) {
+        if (auto* focus = this->upRecyclingGrid->getDefaultFocus()) return focus;
+    }
+    return this->recyclingGrid ? this->recyclingGrid->getDefaultFocus() : nullptr;
 }
 
 void HomeLive::selectGroupIndex(size_t index) {
@@ -582,29 +892,101 @@ void HomeLive::selectGroupIndex(size_t index) {
             groupCache[selectedGroup] = filtered;
         }
     }
-    if (filtered.empty())
-        recyclingGrid->setEmpty();
-    else
-        recyclingGrid->setDataSource(new DataSourceLiveVideoList(filtered));
+    this->showChannels(filtered);
 
     brls::Logger::debug("selectGroupIndex: {}", index);
 }
 
-void HomeLive::toggleFavorite() {
-    //get focus item
-    auto* item = dynamic_cast<RecyclingGridItemLiveVideoCard*>(this->recyclingGrid->getFocusedItem());
-    if (!item) return;
-
-    //get channel
-    tsvitch::LiveM3u8 channel = item->getChannel();
-
-    FavoriteManager::get()->toggle(channel);
-
-    if (FavoriteManager::get()->isFavorite(channel.url)) {
-        item->setFavoriteIcon(true);
-    } else {
-        item->setFavoriteIcon(false);
+void HomeLive::showChannels(tsvitch::LiveM3u8ListResult channels) {
+    if (channels.empty()) {
+        visibleChannels.clear();
+        recyclingGrid->setEmpty();
+        return;
     }
+    visibleChannels = channels;
+    recyclingGrid->setDataSource(new DataSourceLiveVideoList(channels, guideStart));
+}
+
+void HomeLive::pageGuide(int direction) {
+    guideStart += direction * 30 * 60;
+    brls::Logger::info("HomeLive: guide window moved to {}", formatGuideTime(guideStart));
+    this->updateGuideHeader();
+
+    auto channels = this->visibleChannels.empty() ? this->channelsList : this->visibleChannels;
+    this->showChannels(std::move(channels));
+}
+
+void HomeLive::updateGuideHeader() {
+    if (this->guideHeader0) this->guideHeader0->setText(formatGuideHeaderTime(guideStart));
+    if (this->guideHeader1) this->guideHeader1->setText(formatGuideHeaderTime(guideStart + GUIDE_SLOT_SECONDS));
+    if (this->guideHeader2) this->guideHeader2->setText(formatGuideHeaderTime(guideStart + (2 * GUIDE_SLOT_SECONDS)));
+}
+
+void HomeLive::toggleFavorite() {
+    auto* item = dynamic_cast<LiveGuideRowCell*>(this->recyclingGrid->getFocusedItem());
+    if (!item) return;
+    tsvitch::LiveM3u8 channel = item->getChannel();
+    if (channel.url.empty()) return;
+    bool willFavorite = !FavoriteManager::get()->isFavorite(channel.url);
+    FavoriteManager::get()->toggle(channel);
+    brls::Application::notify(willFavorite ? "Added to Favorites" : "Removed from Favorites");
+    {
+        std::lock_guard<std::mutex> lock(groupCacheMutex);
+        groupCache["Favorites"] = FavoriteManager::get()->getFavorites();
+    }
+    this->showChannels(this->visibleChannels);
+}
+
+void HomeLive::openLiveSettings() {
+    Intent::openSettings([this]() {
+        tsvitch::EpgManager::instance().loadFromUrl(ProgramConfig::instance().getEpgUrl(), [this]() {
+            if (this->recyclingGrid) this->recyclingGrid->reloadData();
+        });
+        if (ProgramConfig::instance().getM3U8Url().empty()) {
+            this->showInitialSetup();
+        }
+    });
+}
+
+void HomeLive::openPremiumInfo() {
+    auto* dialog = new brls::Dialog(
+        "PocketTV Premium will require a licensed live TV source and an external subscription website.\n\n"
+        "The app is ready for this setup path, but no premium channels are bundled in this build.");
+    dialog->addButton("Bring your own M3U / EPG", [this]() { this->openLiveSettings(); });
+    dialog->addButton("OK", []() {});
+    dialog->open();
+}
+
+void HomeLive::installForwarder() {
+    auto* dialog = new brls::Dialog(
+        "Install the PocketTV forwarder on the Switch home screen?\n\n"
+        "This creates a full-application launcher that opens /switch/PocketTV.nro. Installing unsigned NSP content may carry account or console risk.");
+    dialog->addButton("hints/cancel"_i18n, []() {});
+    dialog->addButton("Install", []() {
+#ifdef BUILTIN_NSP
+        brls::Application::blockInputs();
+        mini::InstallSD("romfs:/nsp_forwarder.nsp");
+        unsigned long long appTitleID = mini::GetTitleID();
+        appletRequestLaunchApplication(appTitleID, NULL);
+#else
+        brls::Application::notify("This build does not include the forwarder installer");
+#endif
+    });
+    dialog->open();
+}
+
+void HomeLive::showInitialSetup() {
+    statusLabel->setText("PocketTV setup required");
+    recyclingGrid->setEmpty("");
+    recyclingGrid->setVisibility(brls::Visibility::GONE);
+    upRecyclingGrid->setVisibility(brls::Visibility::GONE);
+    if (setupPanel) setupPanel->setVisibility(brls::Visibility::VISIBLE);
+    if (setupM3uButton) brls::Application::giveFocus(setupM3uButton);
+}
+
+void HomeLive::hideInitialSetup() {
+    if (setupPanel) setupPanel->setVisibility(brls::Visibility::GONE);
+    if (recyclingGrid) recyclingGrid->setVisibility(brls::Visibility::VISIBLE);
 }
 
 void HomeLive::search() {
@@ -614,7 +996,7 @@ void HomeLive::search() {
 
 void HomeLive::cancelSearch() {
     isSearchActive = false;
-    this->recyclingGrid->setDataSource(new DataSourceLiveVideoList(this->channelsList));
+    this->showChannels(this->channelsList);
     upRecyclingGrid->setVisibility(brls::Visibility::VISIBLE);
     this->selectGroupIndex(this->selectedGroupIndex);
 }
@@ -645,7 +1027,7 @@ void HomeLive::filter(const std::string& key) {
             if (filtered.empty()) {
                 recyclingGrid->setEmpty();
             } else {
-                recyclingGrid->setDataSource(new DataSourceLiveVideoList(filtered));
+                this->showChannels(filtered);
             }
             upRecyclingGrid->setVisibility(brls::Visibility::GONE);
         }
@@ -722,6 +1104,11 @@ void HomeLive::onShow() {
             if (!cachedChannels.empty()) {
                 brls::Logger::info("HomeLive onShow: Using valid cached channels ({} channels)", cachedChannels.size());
                 this->onLiveList(cachedChannels, false);
+            } else if (ProgramConfig::instance().getSettingItem(SettingItem::IPTV_MODE, 0) == 0 &&
+                       ProgramConfig::instance().getM3U8Url().empty()) {
+                brls::Logger::info("HomeLive onShow: no M3U8 URL configured");
+                this->statusLabel->setText("PocketTV setup required");
+                this->showInitialSetup();
             } else {
                 brls::Logger::info("HomeLive onShow: No valid cache, requesting fresh channels");
                 this->requestLiveList();
@@ -773,6 +1160,27 @@ HomeLive::~HomeLive() {
     }
 }
 
+void HomeLive::draw(NVGcontext* vg, float x, float y, float width, float height, brls::Style style,
+                    brls::FrameContext* ctx) {
+    brls::Box::draw(vg, x, y, width, height, style, ctx);
+
+    if (this->channelsList.empty()) return;
+
+    const auto& state = brls::Application::getControllerState();
+    bool leftDown    = state.buttons[brls::BUTTON_LB];
+    bool rightDown   = state.buttons[brls::BUTTON_RB];
+
+    if (leftDown && !this->guideLeftPressed) {
+        this->pageGuide(-1);
+    }
+    if (rightDown && !this->guideRightPressed) {
+        this->pageGuide(1);
+    }
+
+    this->guideLeftPressed  = leftDown;
+    this->guideRightPressed = rightDown;
+}
+
 brls::View* HomeLive::create() { 
     brls::Logger::debug("HomeLive::create() called - creating new HomeLive instance");
     return new HomeLive(); 
@@ -780,7 +1188,7 @@ brls::View* HomeLive::create() {
 
 void HomeLive::downloadVideo() {
     // Ottieni l'item attualmente focalizzato
-    auto* item = dynamic_cast<RecyclingGridItemLiveVideoCard*>(this->recyclingGrid->getFocusedItem());
+    auto* item = dynamic_cast<LiveGuideRowCell*>(this->recyclingGrid->getFocusedItem());
     if (!item) {
         brls::Logger::warning("HomeLive::downloadVideo: No focused item");
         return;

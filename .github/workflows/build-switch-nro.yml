@@ -1,0 +1,50 @@
+name: Build Switch NRO
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/plex-live-tv
+
+jobs:
+  build-switch-nro:
+    name: Build PocketTV.nro
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Build with existing Switch script
+        run: |
+          docker run --platform linux/amd64 --rm \
+            -e GA_ID="${GA_ID}" \
+            -e GA_KEY="${GA_KEY}" \
+            -e SERVER_URL="${SERVER_URL}" \
+            -e SERVER_TOKEN="${SERVER_TOKEN}" \
+            -e GITHUB_TOKEN="${GITHUB_TOKEN}" \
+            -e SKIP_DKP_SYNC=true \
+            -v "${PWD}:/data" \
+            devkitpro/devkita64:latest \
+            bash -lc "cd /data && scripts/build_switch.sh"
+        env:
+          GA_ID: ci-ga-id
+          GA_KEY: ci-ga-key
+          SERVER_URL: https://example.invalid
+          SERVER_TOKEN: ci-server-token
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Upload PocketTV.nro
+        uses: actions/upload-artifact@v4
+        with:
+          name: PocketTV-nro
+          path: cmake-build-switch/PocketTV.nro
+          if-no-files-found: error

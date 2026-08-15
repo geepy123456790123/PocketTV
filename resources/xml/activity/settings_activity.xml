@@ -181,6 +181,11 @@
                                                                         title="M3U8 URL"
                                                                 />
 
+                                                                <brls:InputCell
+                                                                        id="setting/tools/epg/input"
+                                                                        title="XMLTV / EPG URL"
+                                                                />
+
                                                                 <SelectorCell
                                                                         id="setting/tools/m3u8/timeout" />
 

@@ -1,7 +1,7 @@
 {
-  "title": "TsVitch",
-  "github": "https://github.com/giovannimirulla/TsVitch",
-  "github_release": "https://github.com/giovannimirulla/TsVitch/releases/latest",
+  "title": "PocketTV",
+  "github": "https://github.com/geepy123456790123/PocketTV",
+  "github_release": "https://github.com/geepy123456790123/PocketTV/releases/latest",
   "setting": {
     "quit_hint": "You are about to exit the application. Settings will take effect after the next launch",
     "app": {
@@ -148,7 +148,7 @@
       "author_header": "Author's note",
       "author": "How nice it is to watch TV in the bathroom",
       "contrib_header": "Contributing & Sponsorship",
-      "contrib_text": "TsVitch is an open-source project: contributions, bug reports, and suggestions are welcome. If you like the project and want to support it, please consider becoming a sponsor. You can find all details and options in the GitHub repository.",
+      "contrib_text": "PocketTV is an open-source project: contributions, bug reports, and suggestions are welcome. You can find details and options in the GitHub repository.",
       "contributors_header": "Contributors",
       "sponsors_header": "Sponsors",
       "sponsor_qr": "Become a Sponsor"
@@ -164,7 +164,7 @@
       "font_q1": "How to set a custom font or icon",
       "font_a1": "1. Download the font or icon you want\n2. Rename the font to: font.ttf; Rename the icon to: icon.ttf\n3. Put the files in the configuration folder\n4. Restart the application",
       "font_q2": "Frequently asked questions",
-      "font_a2": "1. TsVitch prioritizes custom fonts, with built-in fonts as fallback\n2. \"Settings - Tools - Others\" offers a menu item to quickly open the configuration folder\n3. On Linux, TsVitch uses xdg-open to open the folder. If the folder does not open correctly, consider installing this tool"
+      "font_a2": "1. PocketTV prioritizes custom fonts, with built-in fonts as fallback\n2. \"Settings - Tools - Others\" offers a menu item to quickly open the configuration folder\n3. On Linux, PocketTV uses xdg-open to open the folder. If the folder does not open correctly, consider installing this tool"
     },
     "hot_keys": {
       "common_header": "Common",
@@ -188,8 +188,8 @@
   "hints": {
     "hint1": "Select a game from the home screen",
     "hint2": "Hold  and press  to enter hbmenu",
-    "hint3": "In hbmenu, select TsVitch",
-    "hint4": "Optional: use the provided NSP forwarder (Put TsVitch.nro in /switch/TsVitch.nro)",
+    "hint3": "In hbmenu, select PocketTV",
+    "hint4": "Optional: use the provided NSP forwarder (Put PocketTV.nro in /switch/PocketTV.nro)",
     "hint_nsp": "Press  to install the NSP forwarder",
     "hint_confirm": "Installing the NSP forwarder may cause a ban\nDo you confirm?",
     "hint_right": "Images are from the Internet, copyright belongs to Nintendo Co., Ltd"
@@ -277,7 +277,7 @@
       "logout": "Log out of the current account \n(the app will close)",
       "scan": "Scan the QR code to log in",
       "loading": "Loading QR code...",
-      "hint": "Use the TsVitch client to scan the QR code",
+      "hint": "Use the PocketTV client to scan the QR code",
       "network_error": "Network error, please try again",
       "qr_not_available": "Invalid QR code, re-enter the dialog",
       "need_confirm": "Waiting for confirmation",

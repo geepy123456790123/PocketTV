@@ -2,9 +2,15 @@
 #include <borealis/core/application.hpp>
 #include <borealis/core/cache_helper.hpp>
 #include <borealis/core/thread.hpp>
+#include <cpr/filesystem.h>
+#include <algorithm>
+#include <fstream>
+#include <functional>
+#include <sstream>
 #include <stb_image.h>
 
 #include "utils/image_helper.hpp"
+#include "utils/config_helper.hpp"
 #include "api/tsvitch/util/http.hpp"
 
 #ifdef USE_WEBP
@@ -55,6 +61,7 @@ std::shared_ptr<ImageHelper> ImageHelper::with(brls::Image* view) {
 
 void ImageHelper::load(std::string url) {
     this->imageUrl = url;
+    this->diskCachePath.clear();
 
     brls::Logger::verbose("load view: {} {}", (size_t)this->imageView, (size_t)this);
 
@@ -70,6 +77,45 @@ void ImageHelper::load(std::string url) {
     ImageThreadPool::instance().Submit([this]() {
         brls::Logger::verbose("Submit view: {} {} {} {}", (size_t)this->imageView, (size_t)this, this->imageUrl,
                               this->isCancel);
+        if (this->isCancel) {
+            this->clean();
+            return;
+        }
+        this->requestImage();
+    });
+}
+
+void ImageHelper::loadWithDiskCache(std::string url) {
+    this->imageUrl = url;
+
+    std::string extension = ".img";
+    auto queryStart       = url.find_first_of("?#");
+    auto cleanUrl         = url.substr(0, queryStart);
+    auto dot              = cleanUrl.find_last_of('.');
+    if (dot != std::string::npos && dot + 1 < cleanUrl.size()) {
+        auto candidate = cleanUrl.substr(dot);
+        std::transform(candidate.begin(), candidate.end(), candidate.begin(),
+                       [](unsigned char c) { return std::tolower(c); });
+        if (candidate == ".png" || candidate == ".jpg" || candidate == ".jpeg" || candidate == ".webp") {
+            extension = candidate;
+        }
+    }
+
+    auto cacheDir = ProgramConfig::instance().getConfigDir() + "/logo_cache";
+    cpr::fs::create_directories(cacheDir);
+    std::ostringstream cacheName;
+    cacheName << std::hex << std::hash<std::string>{}(url);
+    this->diskCachePath = cacheDir + "/" + cacheName.str() + extension;
+
+    if (cpr::fs::exists(this->diskCachePath)) {
+        brls::Logger::verbose("logo disk cache hit: {}", this->diskCachePath);
+        this->imageView->setImageFromFile(this->diskCachePath);
+        this->clean();
+        return;
+    }
+
+    brls::Logger::verbose("request cached image: {} {}", this->imageUrl, this->isCancel);
+    ImageThreadPool::instance().Submit([this]() {
         if (this->isCancel) {
             this->clean();
             return;
@@ -94,6 +140,17 @@ void ImageHelper::requestImage() {
 
     brls::Logger::verbose("load pic:{} size:{} bytes by{} to {} {}", r.url.str(), r.downloaded_bytes, (size_t)this,
                           (size_t)this->imageView, this->imageView->describe());
+
+    if (!this->diskCachePath.empty()) {
+        try {
+            std::ofstream out(this->diskCachePath, std::ios::binary);
+            if (out.good()) {
+                out.write(r.text.data(), (std::streamsize)r.text.size());
+            }
+        } catch (...) {
+            brls::Logger::warning("Failed to write logo cache: {}", this->diskCachePath);
+        }
+    }
 
     uint8_t* imageData = nullptr;
     int imageW = 0, imageH = 0;

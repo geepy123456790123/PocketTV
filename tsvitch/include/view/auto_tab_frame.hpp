@@ -148,6 +148,8 @@ public:
 
     size_t getDefaultTabIndex();
 
+    brls::View* getDefaultFocus() override;
+
     brls::View* getNextFocus(brls::FocusDirection direction, brls::View* currentView) override;
 
     void setItemDefaultBackgroundColor(NVGcolor c);

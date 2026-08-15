@@ -68,6 +68,29 @@ static std::vector<std::string> split_csv(const std::string& csv)
     return out;
 }
 
+static LiveM3u8ListResult buildLiveM3u8Result(const nlohmann::json& json_result)
+{
+    LiveM3u8ListResult result;
+    result.reserve(json_result.size());
+
+    for (const auto& item : json_result) {
+        LiveM3u8 live;
+        live.id         = item.value("id", "");
+        live.chno       = item.value("chno", "");
+        live.logo       = item.value("logo", "");
+        {
+            std::string groupTitle = item.value("groupTitle", "");
+            std::replace(groupTitle.begin(), groupTitle.end(), ';', ' ');
+            live.groupTitle = sanitizeText(groupTitle);
+        }
+        live.title      = sanitizeText(item.value("title", ""));
+        live.url        = item.value("url", "");
+        result.push_back(std::move(live));
+    }
+
+    return result;
+}
+
 nlohmann::json parse_m3u8_to_json(const std::string& m3u8_content)
 {
     if (m3u8_content.empty()) {
@@ -190,11 +213,58 @@ void TsVitchClient::get_file_m3u8(const std::function<void(LiveM3u8ListResult)>&
 {
     auto m3u8Url = ProgramConfig::instance().getM3U8Url();
     auto timeoutMs = ProgramConfig::instance().getIntOption(SettingItem::M3U8_TIMEOUT);
+
+    if (m3u8Url.empty()) {
+        brls::Logger::warning("M3U8 playlist URL is empty");
+        error("Enter an M3U playlist URL in M3U / EPG settings", -1);
+        return;
+    }
     
     // Timeout più intelligente basato sulla dimensione prevista
     if (timeoutMs < 30000) timeoutMs = 30000; // Minimum 30 secondi per file M3U8 grandi
     
     brls::Logger::info("Fetching M3U8 playlist from: {} (timeout: {}ms)", m3u8Url, timeoutMs);
+
+#ifdef __SWITCH__
+    brls::Threading::async([m3u8Url, timeoutMs, callback, error]() {
+        auto response = HTTP::get(m3u8Url, {}, timeoutMs);
+
+        if (response.error) {
+            brls::Logger::error("M3U8 network error: {}", response.error.message);
+            brls::sync([error, message = response.error.message]() {
+                if (error) error("Network error: " + message, -1);
+            });
+            return;
+        }
+
+        if (response.status_code != 200) {
+            brls::Logger::error("M3U8 HTTP error: {}", response.status_code);
+            brls::sync([error, statusCode = response.status_code]() {
+                if (error) error("HTTP error " + std::to_string(statusCode), statusCode);
+            });
+            return;
+        }
+
+        try {
+            auto start_time = std::chrono::high_resolution_clock::now();
+            auto json_result = parse_m3u8_to_json(response.text);
+            auto result = buildLiveM3u8Result(json_result);
+            auto end_time = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+            brls::Logger::info("Switch M3U8 fetch/parse completed in {}ms, found {} channels", duration.count(), result.size());
+
+            brls::sync([callback, result = std::move(result)]() {
+                CALLBACK(result);
+            });
+        } catch (const std::exception& e) {
+            brls::Logger::error("Switch M3U8 parsing error: {}", e.what());
+            brls::sync([error]() {
+                if (error) error("Failed to parse m3u8 content", -1);
+            });
+        }
+    });
+    return;
+#endif
     
     HTTP::__cpr_get(
         m3u8Url,
@@ -244,23 +314,7 @@ void TsVitchClient::get_file_m3u8(const std::function<void(LiveM3u8ListResult)>&
                         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
                         brls::Logger::info("Switch async M3U8 parsing completed in {}ms, found {} channels", duration.count(), json_result.size());
 
-                        LiveM3u8ListResult result;
-                        result.reserve(json_result.size());
-                        
-                        for (const auto& item : json_result) {
-                            LiveM3u8 live;
-                            live.id         = item.value("id", "");
-                            live.chno       = item.value("chno", "");
-                            live.logo       = item.value("logo", "");
-                            {
-                                std::string groupTitle = item.value("groupTitle", "");
-                                std::replace(groupTitle.begin(), groupTitle.end(), ';', ' ');
-                                live.groupTitle = sanitizeText(groupTitle);
-                            }
-                            live.title      = sanitizeText(item.value("title", ""));
-                            live.url        = item.value("url", "");
-                            result.push_back(std::move(live));
-                        }
+                        auto result = buildLiveM3u8Result(json_result);
                         
                         // Final check before calling callback
                         if (cancellationToken->load()) {
@@ -310,23 +364,7 @@ void TsVitchClient::get_file_m3u8(const std::function<void(LiveM3u8ListResult)>&
                     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
                     brls::Logger::info("Switch sync M3U8 parsing completed in {}ms, found {} channels", duration.count(), json_result.size());
 
-                    LiveM3u8ListResult result;
-                    result.reserve(json_result.size());
-                    
-                    for (const auto& item : json_result) {
-                        LiveM3u8 live;
-                        live.id         = item.value("id", "");
-                        live.chno       = item.value("chno", "");
-                        live.logo       = item.value("logo", "");
-                        {
-                            std::string groupTitle = item.value("groupTitle", "");
-                            std::replace(groupTitle.begin(), groupTitle.end(), ';', ' ');
-                            live.groupTitle = sanitizeText(groupTitle);
-                        }
-                        live.title      = sanitizeText(item.value("title", ""));
-                        live.url        = item.value("url", "");
-                        result.push_back(std::move(live));
-                    }
+                    auto result = buildLiveM3u8Result(json_result);
                     
                     CALLBACK(result);
                 } catch (const std::exception& e) {
@@ -345,23 +383,7 @@ void TsVitchClient::get_file_m3u8(const std::function<void(LiveM3u8ListResult)>&
                     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
                     brls::Logger::info("M3U8 parsing completed in {}ms, found {} channels", duration.count(), json_result.size());
 
-                    LiveM3u8ListResult result;
-                    result.reserve(json_result.size());
-                    
-                    for (const auto& item : json_result) {
-                        LiveM3u8 live;
-                        live.id         = item.value("id", "");
-                        live.chno       = item.value("chno", "");
-                        live.logo       = item.value("logo", "");
-                        {
-                            std::string groupTitle = item.value("groupTitle", "");
-                            std::replace(groupTitle.begin(), groupTitle.end(), ';', ' ');
-                            live.groupTitle = sanitizeText(groupTitle);
-                        }
-                        live.title      = sanitizeText(item.value("title", ""));
-                        live.url        = item.value("url", "");
-                        result.push_back(std::move(live));
-                    }
+                    auto result = buildLiveM3u8Result(json_result);
                     
                     brls::sync([callback, result = std::move(result)]() {
                         CALLBACK(result);

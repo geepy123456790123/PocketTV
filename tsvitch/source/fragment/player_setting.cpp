@@ -168,7 +168,7 @@ void PlayerSetting::setupEqualizerSetting(brls::SliderCell* cell, const std::str
     cell->detail->setWidth(50);
     cell->title->setWidth(116);
     cell->title->setMarginRight(0);
-    cell->slider->setStep(0.05f);
+    cell->slider->setStep(0.75f);
     cell->slider->setMarginRight(0);
     cell->slider->setPointerSize(20);
     cell->setDetailText(std::to_string(initValue));

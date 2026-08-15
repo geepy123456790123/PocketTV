@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PocketTV Premium</title>
+    <meta
+      name="description"
+      content="Start a 1-week PocketTV Premium trial, then continue for $9.99 per month."
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="brand-lockup">
+          <img class="app-logo" src="assets/pockettv-icon.png" alt="PocketTV" />
+          <span>PocketTV Premium</span>
+        </div>
+
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <p class="eyebrow">Live TV Built for Nintendo Switch</p>
+            <h1 id="hero-title">Live TV on Switch, unlocked with one code.</h1>
+            <p class="lede">
+              Start with a free 1-week trial. PocketTV Premium handles the playlist, guide data, and channel artwork
+              behind the scenes so setup stays simple.
+            </p>
+
+            <div class="actions">
+              <button class="primary-button" id="checkoutButton" type="button">
+                Start free trial
+              </button>
+              <a class="secondary-link" href="#how-it-works">How setup works</a>
+            </div>
+
+            <p class="fine-print">
+              $0 today. $9.99/month after 7 days unless canceled before the trial ends.
+            </p>
+
+            <div class="trust-strip" aria-label="Premium highlights">
+              <span>No M3U typing</span>
+              <span>Private guide proxy</span>
+              <span>Cancel anytime</span>
+            </div>
+          </div>
+
+          <aside class="plan-panel" aria-label="Premium plan">
+            <div class="plan-head">
+              <span class="plan-name">Premium</span>
+              <span class="trial-pill">7 days free</span>
+            </div>
+            <div class="price-row">
+              <span class="currency">$</span>
+              <span class="price">9.99</span>
+              <span class="period">/ month</span>
+            </div>
+            <div class="code-card" aria-label="Activation code example">
+              <span>Activation code</span>
+              <strong>PK7X2Q9A</strong>
+            </div>
+            <ul class="feature-list">
+              <li>One 8-character activation code</li>
+              <li>Private playlist and guide URLs handled automatically</li>
+              <li>Channel logos proxied through PocketTV</li>
+              <li>Access can be revoked if subscription ends</li>
+            </ul>
+          </aside>
+        </div>
+      </section>
+
+      <section class="device-showcase" aria-labelledby="device-title">
+        <div class="device-copy">
+          <p class="eyebrow">Built for the big handheld screen</p>
+          <h2 id="device-title">A compact guide that feels at home on Switch OLED.</h2>
+          <p>
+            Channel logos, favorites, and live guide data are tuned for quick couch browsing before you jump into a
+            stream.
+          </p>
+        </div>
+        <figure class="device-image-frame">
+          <img
+            src="assets/pockettv-switch-cutout.png"
+            alt="PocketTV live guide displayed on a Nintendo Switch OLED"
+          />
+        </figure>
+      </section>
+
+      <section class="setup-band" id="how-it-works" aria-labelledby="setup-title">
+        <h2 id="setup-title">Setup after checkout</h2>
+        <div class="steps">
+          <article>
+            <span class="step-number">1</span>
+            <h3>Create your subscription</h3>
+            <p>Stripe starts the 7-day trial and returns you to the PocketTV setup page.</p>
+          </article>
+          <article>
+            <span class="step-number">2</span>
+            <h3>Get one code</h3>
+            <p>Your account gets a short activation code like <strong>PK7X2Q9A</strong>.</p>
+          </article>
+          <article>
+            <span class="step-number">3</span>
+            <h3>Enter it in PocketTV</h3>
+            <p>Open PocketTV, choose Premium, and enter the code. The app receives the proxy URLs automatically.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="details-grid" aria-label="Premium details">
+        <div>
+          <h2>Your feed stays hidden</h2>
+          <p>
+            The app never sees upstream feed addresses. PocketTV sends your activation code to the backend and
+            receives public proxy URLs that can be rotated, revoked, or regenerated.
+          </p>
+        </div>
+        <div>
+          <h2>Cancel anytime</h2>
+          <p>
+            If a subscription is canceled or payment fails, the backend disables that customer code and token. The
+            proxy stops serving playlist, guide, stream, and logo requests.
+          </p>
+        </div>
+        <div>
+          <h2>Use authorized content</h2>
+          <p>
+            PocketTV is designed for live TV sources and subscriptions you are allowed to access. Availability, channels,
+            and guide data can vary by provider.
+          </p>
+        </div>
+      </section>
+
+      <section class="faq" aria-labelledby="faq-title">
+        <h2 id="faq-title">Questions</h2>
+        <details>
+          <summary>Do I pay today?</summary>
+          <p>No. The first 7 days are free. Billing begins after the trial unless you cancel.</p>
+        </details>
+        <details>
+          <summary>Where do I use my subscription?</summary>
+          <p>Inside PocketTV on Nintendo Switch homebrew. Choose the Premium setup path and enter your activation code.</p>
+        </details>
+        <details>
+          <summary>Can I still bring my own playlist?</summary>
+          <p>Yes. PocketTV keeps the bring-your-own M3U/EPG option separate from Premium.</p>
+        </details>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="script.js"></script>
+  </body>
+</html>

@@ -73,6 +73,7 @@ VideoView::VideoView() {
         this->disabledSliderGesture = value;
         if (!this->disabledSliderGesture) {
             osdSlider->getProgressSetEvent()->subscribe([this](float progress) {
+                if (this->isLiveMode) return;
                 brls::Logger::verbose("Set progress: {}", progress);
                 this->showOSD(true);
                 if (real_duration > 0) {
@@ -83,6 +84,7 @@ VideoView::VideoView() {
             });
 
             osdSlider->getProgressEvent()->subscribe([this](float progress) {
+                if (this->isLiveMode) return;
                 this->showOSD(false);
                 leftStatusLabel->setText(tsvitch::sec2Time(getRealDuration() * progress));
             });
@@ -337,6 +339,7 @@ VideoView::VideoView() {
             this->setTitle((const char*)data);
         } else if (event == VideoView::REAL_DURATION) {
             this->real_duration = *(int*)data;
+            if (this->isLiveMode) return;
             this->setDuration(tsvitch::sec2Time(real_duration));
             this->setProgress((float)mpvCore->playback_time / (float)real_duration);
         } else if (event == VideoView::LAST_TIME) {
@@ -386,6 +389,7 @@ void VideoView::requestBrightness(float brightness) {
 }
 
 void VideoView::requestSeeking(int seek, int delay) {
+    if (this->isLiveMode) return;
     if (getRealDuration() <= 0) {
         seeking_range = 0;
         is_seeking    = false;
@@ -451,11 +455,11 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
 
     mpvCore->draw(brls::Rect(x, y, width, height), alpha);
 
-    if (HIGHLIGHT_PROGRESS_BAR && (!drawOSD || is_osd_lock)) {
+    if (!isLiveMode && HIGHLIGHT_PROGRESS_BAR && (!drawOSD || is_osd_lock)) {
         drawHighlightProgress(vg, x, y + height, width, alpha);
     }
 
-    if (BOTTOM_BAR && showBottomLineSetting) {
+    if (!isLiveMode && BOTTOM_BAR && showBottomLineSetting) {
         bottomBarColor.a = alpha;
         float progress   = mpvCore->playback_time / getRealDuration();
         progress         = progress > 1.0f ? 1.0f : progress;
@@ -472,9 +476,11 @@ void VideoView::draw(NVGcontext* vg, float x, float y, float width, float height
         }
 
         if (!is_osd_lock) {
-            auto sliderRect = osdSlider->getFrame();
-            drawHighlightProgress(vg, sliderRect.getMinX() + 30, sliderRect.getMinY() + 25, sliderRect.getWidth() - 60,
-                                  alpha);
+            if (!isLiveMode) {
+                auto sliderRect = osdSlider->getFrame();
+                drawHighlightProgress(vg, sliderRect.getMinX() + 30, sliderRect.getMinY() + 25, sliderRect.getWidth() - 60,
+                                      alpha);
+            }
 
             osdTopBox->setVisibility(brls::Visibility::VISIBLE);
             osdBottomBox->setVisibility(brls::Visibility::VISIBLE);
@@ -725,6 +731,7 @@ void VideoView::setLiveMode() {
     leftStatusLabel->setVisibility(brls::Visibility::GONE);
     centerStatusLabel->setVisibility(brls::Visibility::GONE);
     rightStatusLabel->setVisibility(brls::Visibility::GONE);
+    osdSlider->setVisibility(brls::Visibility::GONE);
     // Nascondi il pointer per le live
     osdSlider->setPointerVisible(false);
     _setTvControlMode(false);
@@ -735,6 +742,7 @@ void VideoView::setVideoMode() {
     leftStatusLabel->setVisibility(brls::Visibility::VISIBLE);
     centerStatusLabel->setVisibility(brls::Visibility::VISIBLE);
     rightStatusLabel->setVisibility(brls::Visibility::VISIBLE);
+    osdSlider->setVisibility(brls::Visibility::VISIBLE);
     // Mostra il pointer per i video
     osdSlider->setPointerVisible(true);
     _setTvControlMode(isTvControlMode && !isLiveMode);
@@ -745,6 +753,7 @@ void VideoView::setAdMode() {
     leftStatusLabel->setVisibility(brls::Visibility::VISIBLE);
     centerStatusLabel->setVisibility(brls::Visibility::VISIBLE);
     rightStatusLabel->setVisibility(brls::Visibility::VISIBLE);
+    osdSlider->setVisibility(brls::Visibility::VISIBLE);
     // Nascondi il pointer per gli ad
     osdSlider->setPointerVisible(false);
     _setTvControlMode(false);
@@ -787,7 +796,10 @@ void VideoView::hideHighlightLineSetting() { showHighlightLineSetting = false; }
 
 void VideoView::hideVideoProgressSlider() { osdSlider->setVisibility(brls::Visibility::GONE); }
 
-void VideoView::showVideoProgressSlider() { osdSlider->setVisibility(brls::Visibility::VISIBLE); }
+void VideoView::showVideoProgressSlider() {
+    if (this->isLiveMode) return;
+    osdSlider->setVisibility(brls::Visibility::VISIBLE);
+}
 
 void VideoView::disableProgressSliderSeek(bool disabled) {
     brls::Logger::debug("VideoView: disableProgressSliderSeek = {}", disabled);
@@ -852,8 +864,9 @@ void VideoView::refreshToggleIcon() {
 }
 
 void VideoView::setProgress(float value) {
+    if (isLiveMode) return;
     if (is_seeking) return;
-   if (std::isnan(value)) return;
+    if (std::isnan(value)) return;
     this->osdSlider->setProgress(value);
 }
 
@@ -919,7 +932,7 @@ void VideoView::setFullScreen(bool fs) {
         video->osdSlider->setClipPoint(osdSlider->getClipPoint());
         video->refreshToggleIcon();
         video->setHighlightProgress(highlightData);
-        if (video->isLiveMode) video->setLiveMode();
+        if (this->isLiveMode) video->setLiveMode();
         video->setCustomToggleAction(customToggleAction);
 
         container->addView(video);
@@ -1009,10 +1022,12 @@ void VideoView::registerMpvEvent() {
                 lastPlayedPosition = 0;
                 break;
             case MpvEventEnum::UPDATE_DURATION:
+                if (this->isLiveMode) break;
                 this->setDuration(tsvitch::sec2Time(getRealDuration()));
                 this->setProgress((float)mpvCore->playback_time / getRealDuration());
                 break;
             case MpvEventEnum::UPDATE_PROGRESS:
+                if (this->isLiveMode) break;
                 this->setPlaybackTime(tsvitch::sec2Time(this->mpvCore->video_progress));
                 this->setProgress((float)mpvCore->playback_time / getRealDuration());
                 break;
