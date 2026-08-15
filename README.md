@@ -22,7 +22,7 @@
 <br>
 
 <p align="center">
-<img src="docs/images/pockettv-live-guide.png" alt="PocketTV live guide screenshot">
+<img src="docs/images/pockettv-switch-cutout.png" alt="PocketTV live guide running on a Nintendo Switch">
 </p>
 
 ## Highlights
