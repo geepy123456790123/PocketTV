@@ -1,5 +1,6 @@
 #include <utility>
 #include <algorithm>
+#include <cctype>
 #include <ctime>
 #include <iomanip>
 #include <sstream>
@@ -69,6 +70,23 @@ std::string programmeText(const tsvitch::EpgProgramme& programme, std::time_t sl
 constexpr float GUIDE_SLOT_WIDTH = 247.0f;
 constexpr float GUIDE_SLOT_GAP   = 6.0f;
 constexpr int GUIDE_SLOT_SECONDS = 30 * 60;
+
+std::string normalizedChannelTitle(const tsvitch::LiveM3u8& channel) {
+    std::string title = channel.title.empty() ? channel.chno : channel.title;
+    std::transform(title.begin(), title.end(), title.begin(), [](unsigned char c) {
+        return static_cast<char>(std::tolower(c));
+    });
+    return title;
+}
+
+void sortChannelsAlphabetically(tsvitch::LiveM3u8ListResult& channels) {
+    std::sort(channels.begin(), channels.end(), [](const tsvitch::LiveM3u8& a, const tsvitch::LiveM3u8& b) {
+        auto titleA = normalizedChannelTitle(a);
+        auto titleB = normalizedChannelTitle(b);
+        if (titleA == titleB) return a.url < b.url;
+        return titleA < titleB;
+    });
+}
 
 }  // namespace
 
@@ -342,7 +360,7 @@ public:
 
         std::string logoUrl = channel.logo.empty() ? tsvitch::EpgManager::instance().channelIcon(channel.id) : channel.logo;
         if (logoUrl.empty()) {
-            this->logo->setImageFromRes("pictures/video-card-bg.png");
+            this->logo->setImageFromRes("pictures/empty.png");
             this->logoFallbackLabel->setText(this->fallbackLogoText(channel));
         } else {
             this->logoFallbackLabel->setText("");
@@ -356,7 +374,7 @@ public:
         this->channelLabel->setText("");
         this->groupLabel->setText("");
         this->heartLabel->setText("");
-        this->logo->setImageFromRes("pictures/video-card-bg.png");
+        this->logo->setImageFromRes("pictures/empty.png");
         this->logoFallbackLabel->setText("");
         this->resetProgrammeSlots();
     }
@@ -494,6 +512,8 @@ private:
             if (FavoriteManager::get()->isFavorite(channel.url)) favorites.push_back(channel);
             allChannels.push_back(channel);
         }
+        sortChannelsAlphabetically(favorites);
+        sortChannelsAlphabetically(allChannels);
 
         if (!favorites.empty()) {
             displayRows.push_back({true, "Favorites", {}});
@@ -736,6 +756,7 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
 
     this->hideInitialSetup();
     this->channelsList = std::move(result);
+    sortChannelsAlphabetically(this->channelsList);
     this->updateGuideHeader();
 
     std::unordered_map<std::string, std::vector<size_t>> groupIndices;
@@ -757,14 +778,17 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
     {
         std::lock_guard<std::mutex> lock(groupCacheMutex);
         groupCache.clear();
+        auto favorites = FavoriteManager::get()->getFavorites();
+        sortChannelsAlphabetically(favorites);
         groupCache["All Channels"] = this->channelsList;
-        groupCache["Favorites"]    = FavoriteManager::get()->getFavorites();
+        groupCache["Favorites"]    = std::move(favorites);
         for (const auto& pair : groupIndices) {
             tsvitch::LiveM3u8ListResult filtered;
             filtered.reserve(pair.second.size());
             for (size_t idx : pair.second) {
                 filtered.push_back(this->channelsList[idx]);
             }
+            sortChannelsAlphabetically(filtered);
             groupCache[pair.first] = std::move(filtered);
         }
     }
@@ -775,7 +799,9 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
         {
             std::lock_guard<std::mutex> lock(groupCacheMutex);
             if (group == "Favorites") {
-                groupCache["Favorites"] = FavoriteManager::get()->getFavorites();
+                auto favorites = FavoriteManager::get()->getFavorites();
+                sortChannelsAlphabetically(favorites);
+                groupCache["Favorites"] = std::move(favorites);
             }
             if (groupCache.count(group)) filtered = groupCache[group];
         }
@@ -933,6 +959,7 @@ void HomeLive::toggleFavorite() {
     {
         std::lock_guard<std::mutex> lock(groupCacheMutex);
         groupCache["Favorites"] = FavoriteManager::get()->getFavorites();
+        sortChannelsAlphabetically(groupCache["Favorites"]);
     }
     this->showChannels(this->visibleChannels);
 }
@@ -1024,6 +1051,7 @@ void HomeLive::filter(const std::string& key) {
                     lowerGroupTitle.find(lowerKey) != std::string::npos)
                     filtered.push_back(item);
             }
+            sortChannelsAlphabetically(filtered);
             if (filtered.empty()) {
                 recyclingGrid->setEmpty();
             } else {

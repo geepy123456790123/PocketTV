@@ -10,7 +10,7 @@
 
 using namespace brls::literals;
 
-void BaseVideoCard::prepareForReuse() { this->picture->setImageFromRes("pictures/video-card-bg.png"); }
+void BaseVideoCard::prepareForReuse() { this->picture->setImageFromRes("pictures/empty.png"); }
 
 void BaseVideoCard::cacheForReuse() { ImageHelper::clear(this->picture); }
 
@@ -25,7 +25,11 @@ void RecyclingGridItemLiveVideoCard::setChannel(tsvitch::LiveM3u8 liveData) {
     this->labelGroup->setText(liveData.groupTitle);
     this->labelTitle->setIsWrapping(false);
     this->labelTitle->setText(liveData.title);
-    ImageHelper::with(this->picture)->load(liveData.logo);
+    if (liveData.logo.empty()) {
+        this->picture->setImageFromRes("pictures/empty.png");
+    } else {
+        ImageHelper::with(this->picture)->load(liveData.logo);
+    }
 
     bool isFavorite = FavoriteManager::get()->isFavorite(liveData.url);
 
