@@ -278,7 +278,7 @@ protected:
 const std::string LiveGuideRowCellXML = R"xml(
 <brls:Box
         width="auto"
-        height="58"
+        height="66"
         focusable="true"
         paddingLeft="8"
         paddingRight="8"
@@ -288,7 +288,7 @@ const std::string LiveGuideRowCellXML = R"xml(
         highlightCornerRadius="12"
         cornerRadius="8">
 
-    <brls:Box width="220" height="46" axis="row" alignItems="center">
+    <brls:Box width="220" height="54" axis="row" alignItems="center">
         <brls:Image
                 id="guide/logo"
                 scalingType="fit"
@@ -335,9 +335,15 @@ const std::string LiveGuideRowCellXML = R"xml(
         </brls:Box>
     </brls:Box>
 
-    <brls:Label id="guide/slot0" width="247" height="46" marginLeft="6" fontSize="16" textColor="#F8FAFC" backgroundColor="#20232B" cornerRadius="8"/>
-    <brls:Label id="guide/slot1" width="247" height="46" marginLeft="6" fontSize="16" textColor="#F8FAFC" backgroundColor="#20232B" cornerRadius="8"/>
-    <brls:Label id="guide/slot2" width="247" height="46" marginLeft="6" fontSize="16" textColor="#F8FAFC" backgroundColor="#20232B" cornerRadius="8"/>
+    <brls:Box id="guide/slot0/box" width="247" height="54" marginLeft="6" paddingLeft="10" paddingRight="10" paddingTop="7" paddingBottom="7" backgroundColor="#101218" cornerRadius="8">
+        <brls:Label id="guide/slot0" width="100%" height="auto" fontSize="16" textColor="#F8FAFC"/>
+    </brls:Box>
+    <brls:Box id="guide/slot1/box" width="247" height="54" marginLeft="6" paddingLeft="10" paddingRight="10" paddingTop="7" paddingBottom="7" backgroundColor="#101218" cornerRadius="8">
+        <brls:Label id="guide/slot1" width="100%" height="auto" fontSize="16" textColor="#F8FAFC"/>
+    </brls:Box>
+    <brls:Box id="guide/slot2/box" width="247" height="54" marginLeft="6" paddingLeft="10" paddingRight="10" paddingTop="7" paddingBottom="7" backgroundColor="#101218" cornerRadius="8">
+        <brls:Label id="guide/slot2" width="100%" height="auto" fontSize="16" textColor="#F8FAFC"/>
+    </brls:Box>
 </brls:Box>
 )xml";
 
@@ -398,18 +404,20 @@ public:
 
 private:
     void resetProgrammeSlots() {
-        brls::Label* slots[] = {slot0, slot1, slot2};
-        for (auto* slot : slots) {
-            slot->setVisibility(brls::Visibility::VISIBLE);
-            slot->setWidth(GUIDE_SLOT_WIDTH);
-            slot->setText("");
+        brls::Box* slotBoxes[] = {slot0Box, slot1Box, slot2Box};
+        brls::Label* slots[]   = {slot0, slot1, slot2};
+        for (size_t i = 0; i < 3; ++i) {
+            slotBoxes[i]->setVisibility(brls::Visibility::VISIBLE);
+            slotBoxes[i]->setWidth(GUIDE_SLOT_WIDTH);
+            slots[i]->setText("");
         }
     }
 
     void renderProgrammeSlots(std::time_t guideStart) {
         this->resetProgrammeSlots();
 
-        brls::Label* slots[] = {slot0, slot1, slot2};
+        brls::Box* slotBoxes[] = {slot0Box, slot1Box, slot2Box};
+        brls::Label* slots[]   = {slot0, slot1, slot2};
         auto windowStop      = guideStart + (3 * GUIDE_SLOT_SECONDS);
         int slot             = 0;
 
@@ -430,10 +438,10 @@ private:
             endSlot               = std::max(slot + 1, std::min(3, endSlot));
             int span              = endSlot - slot;
 
-            slots[slot]->setWidth((GUIDE_SLOT_WIDTH * span) + (GUIDE_SLOT_GAP * (span - 1)));
+            slotBoxes[slot]->setWidth((GUIDE_SLOT_WIDTH * span) + (GUIDE_SLOT_GAP * (span - 1)));
             slots[slot]->setText(programmeText(programme, guideStart, windowStop));
             for (int hidden = slot + 1; hidden < endSlot; ++hidden) {
-                slots[hidden]->setVisibility(brls::Visibility::GONE);
+                slotBoxes[hidden]->setVisibility(brls::Visibility::GONE);
             }
             slot = endSlot;
         }
@@ -455,6 +463,9 @@ private:
     BRLS_BIND(brls::Label, heartLabel, "guide/heart");
     BRLS_BIND(brls::Label, channelLabel, "guide/channel");
     BRLS_BIND(brls::Label, groupLabel, "guide/group");
+    BRLS_BIND(brls::Box, slot0Box, "guide/slot0/box");
+    BRLS_BIND(brls::Box, slot1Box, "guide/slot1/box");
+    BRLS_BIND(brls::Box, slot2Box, "guide/slot2/box");
     BRLS_BIND(brls::Label, slot0, "guide/slot0");
     BRLS_BIND(brls::Label, slot1, "guide/slot1");
     BRLS_BIND(brls::Label, slot2, "guide/slot2");

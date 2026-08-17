@@ -9,9 +9,9 @@
                         grow="1"
                         tabBackgroundColor="#07080C"
                         tabItemActiveTextColor="#7DDCFF"
-                        defaultTab="0"
+                        defaultTab="2"
                         demandMode="false"
-                        sidebarWidth="240"
+                        sidebarWidth="0"
                         sidebarPosition="left">
 
                         <Tab label="@i18n/tsvitch/setting/about/tab"
@@ -248,18 +248,19 @@
                                                                 id="setting/iptv/install_forwarder"
                                                                 title="Install Home Screen Forwarder" />
 
-                                                        <brls:RadioCell
-                                                                id="setting/iptv/check_update"
-                                                                title="Check for PocketTV Updates" />
-
                                                         <brls:Label
                                                                 width="auto"
                                                                 height="auto"
                                                                 marginLeft="20px"
-                                                                marginTop="8px"
+                                                                marginTop="2px"
+                                                                marginBottom="18px"
                                                                 fontSize="15"
                                                                 textColor="#AEB3C2"
                                                                 text="Adds a full-application PocketTV launcher to the Switch HOME Menu. Keep PocketTV.nro at /switch/PocketTV.nro on your microSD card." />
+
+                                                        <brls:RadioCell
+                                                                id="setting/iptv/check_update"
+                                                                title="Check for PocketTV Updates" />
 
                                                 </brls:Box>
 
