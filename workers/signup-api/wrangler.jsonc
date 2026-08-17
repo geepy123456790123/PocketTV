@@ -4,16 +4,25 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-08-14",
   "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "api.pocket-tv.net",
+      "custom_domain": true
+    }
+  ],
   "observability": {
     "enabled": true
   },
   "kv_namespaces": [
     {
       "binding": "ACTIVATION_CODES",
-      "id": "REPLACE_WITH_KV_NAMESPACE_ID"
+      "id": "0c5bf0fc0f30499093a7fdfcbbd6ed2e"
     }
   ],
   "vars": {
-    "SERVICE_NAME": "PocketTV Signup API"
+    "SERVICE_NAME": "PocketTV Signup API",
+    "SUCCESS_URL": "https://watch.pocket-tv.net/?checkout=success",
+    "CANCEL_URL": "https://watch.pocket-tv.net/?checkout=cancelled",
+    "PREMIUM_PROXY_BASE_URL": "https://stream.pocket-tv.net"
   }
 }

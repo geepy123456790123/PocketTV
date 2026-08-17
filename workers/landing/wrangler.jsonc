@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pockettv-landing",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-16",
+  "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "pocket-tv.net",
+      "custom_domain": true
+    },
+    {
+      "pattern": "watch.pocket-tv.net",
+      "custom_domain": true
+    }
+  ],
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "../../website/premium-signup",
+    "binding": "ASSETS"
+  }
+}

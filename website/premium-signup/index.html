@@ -23,7 +23,7 @@
             <p class="eyebrow">Live TV Built for Nintendo Switch</p>
             <h1 id="hero-title">Live TV on Switch, unlocked with one code.</h1>
             <p class="lede">
-              Start with a free 1-week trial. PocketTV Premium handles the playlist, guide data, and channel artwork
+              Start with a free 1-week trial. PocketTV Premium handles the playlist and guide data
               behind the scenes so setup stays simple.
             </p>
 
@@ -31,6 +31,12 @@
               <button class="primary-button" id="checkoutButton" type="button">
                 Start free trial
               </button>
+              <a
+                class="download-button"
+                href="https://github.com/geepy123456790123/PocketTV/releases/latest/download/PocketTV.nro"
+              >
+                Download latest NRO
+              </a>
               <a class="secondary-link" href="#how-it-works">How setup works</a>
             </div>
 
@@ -55,15 +61,15 @@
               <span class="price">9.99</span>
               <span class="period">/ month</span>
             </div>
-            <div class="code-card" aria-label="Activation code example">
+            <div class="code-card" id="activationCodeCard" aria-label="Activation code" hidden>
               <span>Activation code</span>
-              <strong>PK7X2Q9A</strong>
+              <strong id="activationCode"></strong>
             </div>
             <ul class="feature-list">
-              <li>One 8-character activation code</li>
-              <li>Private playlist and guide URLs handled automatically</li>
-              <li>Channel logos proxied through PocketTV</li>
-              <li>Access can be revoked if subscription ends</li>
+              <li>Free 1-week trial</li>
+              <li>One simple personalized activation code</li>
+              <li>No playlist or guide typing in Premium mode</li>
+              <li>Premium live TV setup included</li>
             </ul>
           </aside>
         </div>
@@ -72,7 +78,7 @@
       <section class="device-showcase" aria-labelledby="device-title">
         <div class="device-copy">
           <p class="eyebrow">Built for the big handheld screen</p>
-          <h2 id="device-title">A compact guide that feels at home on Switch OLED.</h2>
+          <h2 id="device-title">A compact guide and live tv that feels at home on modded Switch consoles.</h2>
           <p>
             Channel logos, favorites, and live guide data are tuned for quick couch browsing before you jump into a
             stream.
@@ -97,37 +103,13 @@
           <article>
             <span class="step-number">2</span>
             <h3>Get one code</h3>
-            <p>Your account gets a short activation code like <strong>PK7X2Q9A</strong>.</p>
+            <p>Your account gets a short personalized activation code.</p>
           </article>
           <article>
             <span class="step-number">3</span>
             <h3>Enter it in PocketTV</h3>
-            <p>Open PocketTV, choose Premium, and enter the code. The app receives the proxy URLs automatically.</p>
+            <p>Open PocketTV, choose Premium, and enter the code. The guide and live TV channels activate automatically.</p>
           </article>
-        </div>
-      </section>
-
-      <section class="details-grid" aria-label="Premium details">
-        <div>
-          <h2>Your feed stays hidden</h2>
-          <p>
-            The app never sees upstream feed addresses. PocketTV sends your activation code to the backend and
-            receives public proxy URLs that can be rotated, revoked, or regenerated.
-          </p>
-        </div>
-        <div>
-          <h2>Cancel anytime</h2>
-          <p>
-            If a subscription is canceled or payment fails, the backend disables that customer code and token. The
-            proxy stops serving playlist, guide, stream, and logo requests.
-          </p>
-        </div>
-        <div>
-          <h2>Use authorized content</h2>
-          <p>
-            PocketTV is designed for live TV sources and subscriptions you are allowed to access. Availability, channels,
-            and guide data can vary by provider.
-          </p>
         </div>
       </section>
 
@@ -140,6 +122,10 @@
         <details>
           <summary>Where do I use my subscription?</summary>
           <p>Inside PocketTV on Nintendo Switch homebrew. Choose the Premium setup path and enter your activation code.</p>
+        </details>
+        <details>
+          <summary>How do I install PocketTV?</summary>
+          <p>Download the latest NRO, place it at /switch/PocketTV.nro on your microSD card, launch it once from hbmenu, then open TV Setup and choose Install Home Screen Forwarder.</p>
         </details>
         <details>
           <summary>Can I still bring my own playlist?</summary>

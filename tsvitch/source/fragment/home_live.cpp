@@ -5,6 +5,8 @@
 #include <iomanip>
 #include <sstream>
 #include <unordered_map>
+#include <cpr/cpr.h>
+#include <nlohmann/json.hpp>
 #include <borealis/core/touch/tap_gesture.hpp>
 #include <borealis/views/dialog.hpp>
 #include <borealis/core/thread.hpp>
@@ -70,6 +72,7 @@ std::string programmeText(const tsvitch::EpgProgramme& programme, std::time_t sl
 constexpr float GUIDE_SLOT_WIDTH = 247.0f;
 constexpr float GUIDE_SLOT_GAP   = 6.0f;
 constexpr int GUIDE_SLOT_SECONDS = 30 * 60;
+constexpr const char* PREMIUM_REDEEM_URL = "https://api.pocket-tv.net/api/redeem-code";
 
 std::string normalizedChannelTitle(const tsvitch::LiveM3u8& channel) {
     std::string title = channel.title.empty() ? channel.chno : channel.title;
@@ -86,6 +89,16 @@ void sortChannelsAlphabetically(tsvitch::LiveM3u8ListResult& channels) {
         if (titleA == titleB) return a.url < b.url;
         return titleA < titleB;
     });
+}
+
+std::string normalizeActivationCode(std::string code) {
+    std::transform(code.begin(), code.end(), code.begin(), [](unsigned char c) {
+        return static_cast<char>(std::toupper(c));
+    });
+    code.erase(std::remove_if(code.begin(), code.end(), [](unsigned char c) {
+        return !std::isalnum(c);
+    }), code.end());
+    return code;
 }
 
 }  // namespace
@@ -573,7 +586,8 @@ HomeLive::HomeLive() {
     }
     if (this->setupPremiumButton) {
         this->setupPremiumButton->registerClickAction([this](...) -> bool {
-            this->openPremiumInfo();
+            ProgramConfig::instance().setSettingItem(SettingItem::IPTV_MODE, 2);
+            this->openLiveSettings();
             return true;
         });
     }
@@ -619,8 +633,26 @@ HomeLive::HomeLive() {
         });
         
         ChannelManager::get()->remove();
-        this->requestLiveList();
+        if (ProgramConfig::instance().getIntOption(SettingItem::IPTV_MODE) == 2) {
+            this->verifyPremiumSubscriptionAndLoad();
+        } else {
+            this->requestLiveList();
+        }
         //reset index group
+        this->selectGroupIndex(0);
+    });
+
+    OnPremiumChanged.subscribe([this]() {
+        brls::Logger::debug("OnPremiumChanged: verifying premium subscription");
+        if (ProgramConfig::instance().getIntOption(SettingItem::IPTV_MODE) != 2) return;
+        brls::Threading::sync([this]() {
+            hideInitialSetup();
+            statusLabel->setText("Verifying PocketTV Premium...");
+            recyclingGrid->showSkeleton();
+            upRecyclingGrid->setVisibility(brls::Visibility::GONE);
+        });
+        ChannelManager::get()->remove();
+        this->verifyPremiumSubscriptionAndLoad();
         this->selectGroupIndex(0);
     });
 
@@ -655,7 +687,11 @@ HomeLive::HomeLive() {
     int iptvMode = ProgramConfig::instance().getSettingItem(SettingItem::IPTV_MODE, 0);
     brls::Logger::info("HomeLive constructor: IPTV mode is {}", iptvMode);
     
-    if (iptvMode == 1) {
+    if (iptvMode == 2) {
+        brls::Logger::info("HomeLive constructor: Premium mode detected, verifying subscription");
+        this->verifyPremiumSubscriptionAndLoad();
+        isInitialLoadInProgress = false;
+    } else if (iptvMode == 1) {
         brls::Logger::info("HomeLive constructor: Xtream mode detected, using smart cache approach");
         
         // Prova prima la cache intelligente anche per Xtream
@@ -977,11 +1013,96 @@ void HomeLive::openLiveSettings() {
 
 void HomeLive::openPremiumInfo() {
     auto* dialog = new brls::Dialog(
-        "PocketTV Premium will require a licensed live TV source and an external subscription website.\n\n"
-        "The app is ready for this setup path, but no premium channels are bundled in this build.");
-    dialog->addButton("Bring your own M3U / EPG", [this]() { this->openLiveSettings(); });
+        "PocketTV Premium uses an activation code from the subscription website.\n\n"
+        "Choose PocketTV Premium in Live TV settings and enter your code. PocketTV will verify the code each time Premium mode loads.");
+    dialog->addButton("Open Settings", [this]() {
+        ProgramConfig::instance().setSettingItem(SettingItem::IPTV_MODE, 2);
+        this->openLiveSettings();
+    });
     dialog->addButton("OK", []() {});
     dialog->open();
+}
+
+void HomeLive::verifyPremiumSubscriptionAndLoad() {
+    std::string code = normalizeActivationCode(
+        ProgramConfig::instance().getSettingItem(SettingItem::PREMIUM_ACTIVATION_CODE, std::string{""}));
+
+    if (code.size() != 8) {
+        statusLabel->setText("Enter your Premium activation code");
+        recyclingGrid->setEmpty("Premium activation required");
+        upRecyclingGrid->setVisibility(brls::Visibility::GONE);
+        hideInitialSetup();
+        this->openPremiumInfo();
+        return;
+    }
+
+    hideInitialSetup();
+    statusLabel->setText("Verifying PocketTV Premium...");
+    recyclingGrid->setEmpty("Checking subscription");
+    upRecyclingGrid->setVisibility(brls::Visibility::GONE);
+
+    nlohmann::json body = {{"code", code}};
+    cpr::PostCallback(
+        [this, validityFlag = this->validityFlag](const cpr::Response& r) {
+            if (!validityFlag || !validityFlag->load()) return;
+
+            std::string errorMessage;
+            std::string m3uUrl;
+            std::string epgUrl;
+
+            if (r.error) {
+                errorMessage = "Premium verification failed. Check your network connection.";
+                brls::Logger::error("Premium redeem network error: {}", r.error.message);
+            } else if (r.status_code < 200 || r.status_code >= 300) {
+                errorMessage = "Premium subscription inactive or activation code invalid.";
+                brls::Logger::warning("Premium redeem HTTP error: {}", r.status_code);
+            } else {
+                auto json = nlohmann::json::parse(r.text, nullptr, false);
+                if (json.is_discarded() || !json.contains("m3uUrl") || !json.contains("epgUrl") ||
+                    !json["m3uUrl"].is_string() || !json["epgUrl"].is_string()) {
+                    errorMessage = "Premium verification response was incomplete.";
+                    brls::Logger::error("Premium redeem response missing required URLs");
+                } else {
+                    m3uUrl = json["m3uUrl"].get<std::string>();
+                    epgUrl = json["epgUrl"].get<std::string>();
+                    if (m3uUrl.empty() || epgUrl.empty()) {
+                        errorMessage = "Premium verification response was incomplete.";
+                    }
+                }
+            }
+
+            brls::sync([this, validityFlag, errorMessage, m3uUrl, epgUrl]() {
+                if (!validityFlag || !validityFlag->load()) return;
+
+                if (!errorMessage.empty()) {
+                    ProgramConfig::instance().setSettingItem(SettingItem::PREMIUM_M3U_URL, std::string{""});
+                    ProgramConfig::instance().setSettingItem(SettingItem::PREMIUM_EPG_URL, std::string{""});
+                    ProgramConfig::instance().setM3U8Url("");
+                    ProgramConfig::instance().setEpgUrl("");
+                    ChannelManager::get()->remove();
+                    statusLabel->setText("PocketTV Premium unavailable");
+                    recyclingGrid->setError(errorMessage);
+                    upRecyclingGrid->setVisibility(brls::Visibility::GONE);
+                    return;
+                }
+
+                ProgramConfig::instance().setSettingItem(SettingItem::PREMIUM_M3U_URL, m3uUrl);
+                ProgramConfig::instance().setSettingItem(SettingItem::PREMIUM_EPG_URL, epgUrl);
+                ProgramConfig::instance().setM3U8Url(m3uUrl);
+                ProgramConfig::instance().setEpgUrl(epgUrl);
+                ChannelManager::get()->remove();
+
+                statusLabel->setText("Premium active. Loading channels...");
+                tsvitch::EpgManager::instance().loadFromUrl(epgUrl, [this]() {
+                    if (this->recyclingGrid) this->recyclingGrid->reloadData();
+                });
+                this->requestLiveList();
+            });
+        },
+        cpr::Url{PREMIUM_REDEEM_URL},
+        cpr::Header{{"Content-Type", "application/json"}, {"Accept", "application/json"}, {"User-Agent", "PocketTV"}},
+        cpr::Body{body.dump()},
+        cpr::Timeout{15000});
 }
 
 void HomeLive::installForwarder() {
@@ -1077,6 +1198,11 @@ void HomeLive::onShow() {
         
         // Per decidere se ricaricare, controlla l'età della cache
         int iptvMode = ProgramConfig::instance().getSettingItem(SettingItem::IPTV_MODE, 0);
+        if (iptvMode == 2) {
+            brls::Logger::info("HomeLive onShow: Premium mode active, verifying subscription");
+            this->verifyPremiumSubscriptionAndLoad();
+            return;
+        }
         int maxCacheAge = (iptvMode == 1) ? 5 : 15; // Xtream: 5 min, M3U8: 15 min
         
         brls::Threading::async([this, maxCacheAge, iptvMode, validityFlag = this->validityFlag] {
@@ -1129,7 +1255,10 @@ void HomeLive::onShow() {
                 return;
             }
             
-            if (!cachedChannels.empty()) {
+            if (ProgramConfig::instance().getSettingItem(SettingItem::IPTV_MODE, 0) == 2) {
+                brls::Logger::info("HomeLive onShow: Premium mode active, verifying subscription");
+                this->verifyPremiumSubscriptionAndLoad();
+            } else if (!cachedChannels.empty()) {
                 brls::Logger::info("HomeLive onShow: Using valid cached channels ({} channels)", cachedChannels.size());
                 this->onLiveList(cachedChannels, false);
             } else if (ProgramConfig::instance().getSettingItem(SettingItem::IPTV_MODE, 0) == 0 &&

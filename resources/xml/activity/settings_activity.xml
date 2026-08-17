@@ -3,12 +3,12 @@
         headerHidden="true"
         footerHidden="false">
 
-        <brls:Box backgroundColor="@theme/brls/background">
+        <brls:Box backgroundColor="#050608">
                 <AutoTabFrame
                         id="setting/tabFrame"
                         grow="1"
-                        tabBackgroundColor="@theme/color/grey_1"
-                        tabItemActiveTextColor="@theme/color/tsvitch"
+                        tabBackgroundColor="#07080C"
+                        tabItemActiveTextColor="#7DDCFF"
                         defaultTab="0"
                         demandMode="false"
                         sidebarWidth="240"
@@ -132,7 +132,7 @@
                                 </brls:ScrollingFrame>
                         </Tab>
 
-                        <Tab label="IPTV Settings"
+                        <Tab label="TV Setup"
                                 style="inline"
                                 icon="@res/svg/setting_tools.svg"
                                 iconActivate="@res/svg/setting_tools_active.svg"
@@ -141,6 +141,7 @@
                                         width="auto"
                                         height="auto"
                                         marginTop="10"
+                                        backgroundColor="#050608"
                                         grow="1.0">
 
                                         <brls:Box
@@ -151,12 +152,21 @@
                                                 paddingLeft="@style/brls/tab_frame/content_padding_sides"
                                                 paddingRight="@style/brls/tab_frame/content_padding_sides"
                                                 paddingTop="@style/brls/tab_frame/content_padding_top_bottom"
-                                                paddingBottom="@style/brls/tab_frame/content_padding_top_bottom">
+                                                paddingBottom="@style/brls/tab_frame/content_padding_top_bottom"
+                                                backgroundColor="#050608">
+                                                <AuroraBackground
+                                                        positionType="absolute"
+                                                        positionLeft="0"
+                                                        positionRight="0"
+                                                        positionTop="0"
+                                                        positionBottom="0"
+                                                        width="100%"
+                                                        height="100%" />
                                                 
                                                 <brls:Header
                                                         width="auto"
                                                         height="auto"
-                                                        title="IPTV Configuration"
+                                                        title="PocketTV Premium"
                                                         marginBottom="0px" />
                                                 <brls:Box
                                                         width="100%"
@@ -166,7 +176,99 @@
 
                                                         <SelectorCell
                                                                 id="setting/iptv/mode_selector"
-                                                                title="IPTV Mode" />
+                                                                title="TV Source" />
+
+                                                        <!-- Premium Section -->
+                                                        <brls:Box
+                                                                id="setting/iptv/premium_section"
+                                                                width="100%"
+                                                                height="auto"
+                                                                axis="column"
+                                                                marginTop="20px">
+
+                                                                <brls:Box
+                                                                        width="100%"
+                                                                        height="auto"
+                                                                        axis="row"
+                                                                        alignItems="center"
+                                                                        marginBottom="18px">
+
+                                                                        <QRImage
+                                                                                width="112"
+                                                                                height="112"
+                                                                                cornerRadius="8"
+                                                                                QRContent="https://pocket-tv.net" />
+
+                                                                        <brls:Box
+                                                                                width="auto"
+                                                                                height="auto"
+                                                                                grow="1"
+                                                                                axis="column"
+                                                                                marginLeft="20px">
+
+                                                                                <brls:Label
+                                                                                        width="auto"
+                                                                                        height="auto"
+                                                                                        fontSize="22"
+                                                                                        textColor="#F8FAFC"
+                                                                                        text="Subscribe at pocket-tv.net" />
+
+                                                                                <brls:Label
+                                                                                        width="auto"
+                                                                                        height="auto"
+                                                                                        marginTop="6px"
+                                                                                        fontSize="16"
+                                                                                        textColor="#AEB3C2"
+                                                                                        text="Scan the QR code or visit pocket-tv.net on your phone to start the free trial, then enter your activation code below." />
+
+                                                                        </brls:Box>
+
+                                                                </brls:Box>
+
+                                                                <brls:InputCell
+                                                                        id="setting/iptv/premium_code"
+                                                                        title="Premium activation code" />
+
+                                                        </brls:Box>
+
+                                                </brls:Box>
+
+                                                <brls:Header
+                                                        width="auto"
+                                                        height="auto"
+                                                        title="Install"
+                                                        marginBottom="0px" />
+                                                <brls:Box
+                                                        width="100%"
+                                                        height="auto"
+                                                        axis="column"
+                                                        marginBottom="30px">
+
+                                                        <brls:RadioCell
+                                                                id="setting/iptv/install_forwarder"
+                                                                title="Install Home Screen Forwarder" />
+
+                                                        <brls:Label
+                                                                width="auto"
+                                                                height="auto"
+                                                                marginLeft="20px"
+                                                                marginTop="8px"
+                                                                fontSize="15"
+                                                                textColor="#AEB3C2"
+                                                                text="Adds a full-application PocketTV launcher to the Switch HOME Menu. Keep PocketTV.nro at /switch/PocketTV.nro on your microSD card." />
+
+                                                </brls:Box>
+
+                                                <brls:Header
+                                                        width="auto"
+                                                        height="auto"
+                                                        title="Advanced setup"
+                                                        marginBottom="0px" />
+                                                <brls:Box
+                                                        width="100%"
+                                                        height="auto"
+                                                        axis="column"
+                                                        marginBottom="30px">
 
                                                         <!-- M3U8 Section -->
                                                         <brls:Box

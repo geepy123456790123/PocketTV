@@ -45,6 +45,8 @@ For a subscription-gated service, use the Cloudflare Worker proxy in [docs/premi
 
 The signup website for a 7-day trial and $9.99/month Premium plan is in [website/premium-signup](website/premium-signup), with the matching Stripe Checkout API in [workers/signup-api](workers/signup-api).
 
+Cloudflare Workers deployment notes for `pocket-tv.net` are in [docs/cloudflare-workers.md](docs/cloudflare-workers.md).
+
 ## Nintendo Switch
 
 1. Download the latest PocketTV release.

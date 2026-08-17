@@ -55,3 +55,6 @@ inline brls::Event<> OnProxyUrlChanged;
 inline brls::Event<> OnIPTVModeChanged;
 // Evento globale per notificare il cambio Xtream
 inline brls::Event<XtreamData> OnXtreamChanged;
+
+// Evento globale per notificare il cambio configurazione Premium
+inline brls::Event<> OnPremiumChanged;

@@ -45,6 +45,7 @@ private:
     BRLS_BIND(TsVitchSelectorCell, selectorIPTVMode, "setting/iptv/mode_selector");
     BRLS_BIND(brls::Box, boxM3U8Section, "setting/iptv/m3u8_section");
     BRLS_BIND(brls::Box, boxXtreamSection, "setting/iptv/xtream_section");
+    BRLS_BIND(brls::Box, boxPremiumSection, "setting/iptv/premium_section");
     
     // M3U8 Controls
     BRLS_BIND(brls::InputCell, btnM3U8Input, "setting/tools/m3u8/input");
@@ -56,6 +57,10 @@ private:
     BRLS_BIND(brls::InputCell, btnXtreamServer, "setting/iptv/xtream_server");
     BRLS_BIND(brls::InputCell, btnXtreamUsername, "setting/iptv/xtream_username");
     BRLS_BIND(brls::InputCell, btnXtreamPassword, "setting/iptv/xtream_password");
+
+    // Premium Controls
+    BRLS_BIND(brls::InputCell, btnPremiumCode, "setting/iptv/premium_code");
+    BRLS_BIND(brls::RadioCell, btnInstallForwarder, "setting/iptv/install_forwarder");
     
     BRLS_BIND(TsVitchSelectorCell, selectorLang, "setting/language");
     BRLS_BIND(TsVitchSelectorCell, selectorTheme, "setting/ui/theme");

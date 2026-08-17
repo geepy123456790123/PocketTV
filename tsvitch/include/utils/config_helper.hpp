@@ -80,13 +80,17 @@ enum class SettingItem {
     UP_FILTER,
 
     // IPTV Mode Selection
-    IPTV_MODE,  // 0 = M3U8, 1 = Xtream
+    IPTV_MODE,  // 0 = M3U8, 1 = Xtream, 2 = Premium
 
     // Xtream Codes IPTV Settings
     XTREAM_SERVER_URL,
     XTREAM_USERNAME,
     XTREAM_PASSWORD,
     XTREAM_ENABLED,
+
+    PREMIUM_ACTIVATION_CODE,
+    PREMIUM_M3U_URL,
+    PREMIUM_EPG_URL,
 
     GROUP_SELECTED_INDEX,
 };

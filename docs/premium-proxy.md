@@ -7,9 +7,11 @@ PocketTV Premium should not hardcode or publish the raw Dispatcharr M3U/EPG URLs
 After deployment, configure PocketTV with:
 
 ```text
-M3U: https://YOUR_WORKER_DOMAIN/premium/m3u?token=USER_OR_SHARED_TOKEN
-EPG: https://YOUR_WORKER_DOMAIN/premium/epg?token=USER_OR_SHARED_TOKEN
+M3U: https://YOUR_WORKER_DOMAIN/premium/m3u?session=SHORT_LIVED_SESSION_TOKEN
+EPG: https://YOUR_WORKER_DOMAIN/premium/epg?session=SHORT_LIVED_SESSION_TOKEN
 ```
+
+The app gets those URLs by redeeming an 8-character activation code with the signup API. Sessions expire and can be renewed by redeeming the activation code again.
 
 The M3U response rewrites stream URLs through:
 
@@ -23,7 +25,7 @@ Logo and XMLTV icon URLs are rewritten through:
 https://YOUR_WORKER_DOMAIN/premium/asset?u=...
 ```
 
-That keeps the raw Dispatcharr host and paths out of the app-visible playlist and EPG.
+The `u` value is encrypted with `PROXY_URL_SECRET`, so the app-visible playlist and EPG do not expose reversible upstream stream or logo URLs.
 
 ## Deploy
 
@@ -32,23 +34,26 @@ cd workers/premium-proxy
 npm install
 npx wrangler secret put UPSTREAM_M3U_URL
 npx wrangler secret put UPSTREAM_EPG_URL
-npx wrangler secret put PREMIUM_SHARED_TOKEN
+npx wrangler secret put PROXY_URL_SECRET
+npx wrangler secret put DISPATCHARR_PROXY_SECRET
 npm run deploy
 ```
 
 Use the Dispatcharr M3U URL as `UPSTREAM_M3U_URL` and the Dispatcharr XMLTV URL as `UPSTREAM_EPG_URL`. Do not commit those values.
 
-`PREMIUM_SHARED_TOKEN` is good enough for private testing. For real subscriptions, replace it with per-user tokens issued by the subscription website.
+`PROXY_URL_SECRET` should be a long random value. It is used only by the proxy Worker to encrypt and decrypt rewritten target URLs.
+
+`DISPATCHARR_PROXY_SECRET` is sent to upstream Dispatcharr requests as `X-PocketTV-Proxy-Secret`. Add a WAF Skip rule on the Dispatcharr zone that matches this header before any broad country block.
 
 ## Monetization Path
 
 Use Stripe or Lemon Squeezy on an external website:
 
 1. User subscribes on the website.
-2. Backend creates a PocketTV token for that user.
-3. PocketTV displays a setup code or accepts the token/URL.
-4. Worker validates the token before returning M3U/EPG/stream/asset responses.
-5. Canceling a subscription revokes that user's token.
+2. Backend creates an 8-character PocketTV activation code.
+3. PocketTV redeems the activation code for short-lived M3U and EPG session URLs.
+4. Worker validates the session before returning M3U/EPG/stream/asset responses.
+5. Canceling a subscription revokes the activation code and prevents new sessions.
 
 ## Rights Note
 

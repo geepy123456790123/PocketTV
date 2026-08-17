@@ -6,6 +6,8 @@
 #include <borealis/views/dialog.hpp>
 #include <borealis/views/cells/cell_bool.hpp>
 #include <borealis/views/cells/cell_input.hpp>
+#include <algorithm>
+#include <cctype>
 #include <cpr/cpr.h>
 
 #include "tsvitch.h"
@@ -20,6 +22,10 @@
 #include "view/text_box.hpp"
 #include "view/selector_cell.hpp"
 #include "view/mpv_core.hpp"
+
+#ifdef BUILTIN_NSP
+#include "nspmini.hpp"
+#endif
 
 #if defined(__APPLE__) || defined(__linux__) || defined(_WIN32)
 #include "borealis/platforms/desktop/desktop_platform.hpp"
@@ -520,7 +526,7 @@ void SettingsActivity::onContentAvailable() {
 
     // Inizializza il selettore modalità IPTV
     auto iptvModeOption = conf.getOptionData(SettingItem::IPTV_MODE);
-    selectorIPTVMode->init("IPTV Mode", iptvModeOption.optionList,
+    selectorIPTVMode->init("TV Source", iptvModeOption.optionList,
                           conf.getIntOptionIndex(SettingItem::IPTV_MODE), [this, iptvModeOption](int data) {
                               ProgramConfig::instance().setSettingItem(SettingItem::IPTV_MODE,
                                                                        iptvModeOption.rawOptionList[data]);
@@ -626,6 +632,45 @@ void SettingsActivity::onContentAvailable() {
         }, 
         "Enter your password", "password", 255);
 
+    btnPremiumCode->init("Activation Code", conf.getSettingItem(SettingItem::PREMIUM_ACTIVATION_CODE, std::string{""}),
+        [](const std::string& data) {
+            std::string code = pystring::strip(data);
+            std::transform(code.begin(), code.end(), code.begin(), [](unsigned char c) {
+                return static_cast<char>(std::toupper(c));
+            });
+            code.erase(std::remove_if(code.begin(), code.end(), [](unsigned char c) {
+                return !std::isalnum(c);
+            }), code.end());
+            ProgramConfig::instance().setSettingItem(SettingItem::PREMIUM_ACTIVATION_CODE, code);
+            OnPremiumChanged.fire();
+        },
+        "Enter Premium activation code", "PK7X2Q9A", 8);
+    btnPremiumCode->detail->setMaxWidth(140);
+    btnPremiumCode->detail->setSingleLine(true);
+
+#ifdef __SWITCH__
+    btnInstallForwarder->registerClickAction([](...) -> bool {
+        auto* dialog = new brls::Dialog(
+            "Install the PocketTV forwarder on the Switch HOME Menu?\n\n"
+            "This creates a full-application launcher that opens /switch/PocketTV.nro. Keep PocketTV.nro at that path on your microSD card.");
+        dialog->addButton("hints/cancel"_i18n, []() {});
+        dialog->addButton("Install", []() {
+#ifdef BUILTIN_NSP
+            brls::Application::blockInputs();
+            mini::InstallSD("romfs:/nsp_forwarder.nsp");
+            unsigned long long appTitleID = mini::GetTitleID();
+            appletRequestLaunchApplication(appTitleID, NULL);
+#else
+            brls::Application::notify("This build does not include the forwarder installer");
+#endif
+        });
+        dialog->open();
+        return true;
+    });
+#else
+    btnInstallForwarder->setVisibility(brls::Visibility::GONE);
+#endif
+
     // Imposta la visibilità iniziale delle sezioni
     this->updateIPTVSectionVisibility();
 
@@ -639,20 +684,25 @@ void SettingsActivity::updateIPTVSectionVisibility() {
     auto& conf = ProgramConfig::instance();
     int currentMode = conf.getIntOption(SettingItem::IPTV_MODE);
     
-    // 0 = M3U8, 1 = Xtream
+    // 0 = M3U8, 1 = Xtream, 2 = Premium
     bool showM3U8 = (currentMode == 0);
     bool showXtream = (currentMode == 1);
+    bool showPremium = (currentMode == 2);
     
     // Mostra/nascondi le sezioni
     if (boxM3U8Section) {
         boxM3U8Section->setVisibility(showM3U8 ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
     }
-    
+
     if (boxXtreamSection) {
         boxXtreamSection->setVisibility(showXtream ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
     }
-    
-    brls::Logger::debug("IPTV Section Visibility updated: M3U8={}, Xtream={}", showM3U8, showXtream);
+
+    if (boxPremiumSection) {
+        boxPremiumSection->setVisibility(showPremium ? brls::Visibility::VISIBLE : brls::Visibility::GONE);
+    }
+
+    brls::Logger::debug("IPTV Section Visibility updated: M3U8={}, Xtream={}, Premium={}", showM3U8, showXtream, showPremium);
 }
 
 void SettingsActivity::willDisappear(bool resetState) {

@@ -64,6 +64,7 @@ private:
     void showChannels(tsvitch::LiveM3u8ListResult channels);
     void pageGuide(int direction);
     void updateGuideHeader();
+    void verifyPremiumSubscriptionAndLoad();
 
     int selectedGroupIndex = 0;
     std::time_t guideStart = 0;

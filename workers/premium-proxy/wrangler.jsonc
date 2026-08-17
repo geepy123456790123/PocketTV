@@ -4,9 +4,21 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-08-14",
   "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "stream.pocket-tv.net",
+      "custom_domain": true
+    }
+  ],
   "observability": {
     "enabled": true
   },
+  "kv_namespaces": [
+    {
+      "binding": "ACTIVATION_CODES",
+      "id": "0c5bf0fc0f30499093a7fdfcbbd6ed2e"
+    }
+  ],
   "vars": {
     "SERVICE_NAME": "PocketTV Premium"
   }
