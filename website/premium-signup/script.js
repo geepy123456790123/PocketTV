@@ -2,6 +2,7 @@ const checkoutButton = document.getElementById("checkoutButton");
 const toast = document.getElementById("toast");
 const activationCodeCard = document.getElementById("activationCodeCard");
 const activationCode = document.getElementById("activationCode");
+const checkoutEmail = document.getElementById("checkoutEmail");
 
 const CHECKOUT_ENDPOINT = "https://api.pocket-tv.net/api/create-checkout-session";
 const CODE_ENDPOINT = "https://api.pocket-tv.net/api/checkout-code";
@@ -11,12 +12,13 @@ showCheckoutResult();
 checkoutButton?.addEventListener("click", async () => {
   checkoutButton.disabled = true;
   checkoutButton.textContent = "Opening checkout...";
+  const email = checkoutEmail?.value?.trim() ?? "";
 
   try {
     const response = await fetch(CHECKOUT_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan: "pockettv-premium-monthly" })
+      body: JSON.stringify({ plan: "pockettv-premium-monthly", email })
     });
 
     if (!response.ok) throw new Error("Checkout endpoint is not configured yet.");
@@ -27,7 +29,7 @@ checkoutButton?.addEventListener("click", async () => {
     window.location.assign(payload.url);
   } catch (error) {
     showToast(
-      "Checkout backend is not connected yet. Create a Stripe Checkout endpoint with a 7-day trial and $9.99 monthly price."
+      "Checkout could not be opened. Check the email address and try again."
     );
     checkoutButton.disabled = false;
     checkoutButton.textContent = "Start free trial";

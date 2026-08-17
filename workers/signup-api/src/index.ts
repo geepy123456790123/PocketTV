@@ -17,6 +17,7 @@ const CORS_HEADERS = {
 };
 
 const PREMIUM_SESSION_TTL_SECONDS = 6 * 60 * 60;
+const TRIAL_DAYS = 7;
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(["active", "trialing"]);
 const INACTIVE_SUBSCRIPTION_STATUSES = new Set(["canceled", "incomplete_expired", "unpaid", "past_due", "paused"]);
 
@@ -78,16 +79,25 @@ async function createCheckoutSession(request: Request, env: Env): Promise<Respon
   requireEnv(env.SUCCESS_URL, "SUCCESS_URL");
   requireEnv(env.CANCEL_URL, "CANCEL_URL");
 
+  const email = normalizeEmail(body.email);
+  const trialEligibility = await getTrialEligibility(env, { email });
   const params = new URLSearchParams();
   params.set("mode", "subscription");
   params.set("line_items[0][price]", env.STRIPE_MONTHLY_PRICE_ID);
   params.set("line_items[0][quantity]", "1");
-  params.set("subscription_data[trial_period_days]", "7");
+  params.set("payment_method_collection", "always");
+  if (email) params.set("customer_email", email);
+  if (trialEligibility.eligible) {
+    params.set("subscription_data[trial_period_days]", String(TRIAL_DAYS));
+  }
   params.set("allow_promotion_codes", "true");
   params.set("billing_address_collection", "auto");
   params.set("success_url", appendCheckoutSessionPlaceholder(env.SUCCESS_URL));
   params.set("cancel_url", env.CANCEL_URL);
   params.set("metadata[plan]", "pockettv-premium-monthly");
+  params.set("metadata[trial_eligible]", trialEligibility.eligible ? "true" : "false");
+  if (trialEligibility.reason) params.set("metadata[trial_ineligible_reason]", trialEligibility.reason);
+  if (email) params.set("metadata[email_hash]", await sha256Hex(email));
 
   const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
@@ -189,12 +199,17 @@ async function handleCheckoutCompleted(session: StripeCheckoutCompletedSession, 
 
   const subscriptionId = stringValue(session.subscription);
   const customerId = stringValue(session.customer);
+  const email = normalizeEmail(session.customer_details?.email ?? session.customer_email);
+  const subscription = subscriptionId ? await fetchStripeSubscription(subscriptionId, env) : null;
+  const paymentFingerprint = paymentMethodFingerprint(subscription?.default_payment_method);
   const code = await uniqueActivationCode(env);
   const now = Math.floor(Date.now() / 1000);
   const record: ActivationCodeRecord = {
     status: "active",
     stripeCustomerId: customerId,
     stripeSubscriptionId: subscriptionId,
+    customerEmailHash: email ? await sha256Hex(email) : undefined,
+    paymentMethodFingerprintHash: paymentFingerprint ? await sha256Hex(paymentFingerprint) : undefined,
     createdAt: now,
     updatedAt: now
   };
@@ -203,6 +218,14 @@ async function handleCheckoutCompleted(session: StripeCheckoutCompletedSession, 
   await env.ACTIVATION_CODES.put(`checkout:${session.id}`, code);
   if (subscriptionId) await env.ACTIVATION_CODES.put(`subscription:${subscriptionId}`, code);
   if (customerId) await env.ACTIVATION_CODES.put(`customer:${customerId}`, code);
+  await recordTrialUsage(env, {
+    email,
+    customerId,
+    paymentMethodFingerprint: paymentFingerprint,
+    checkoutSessionId: session.id,
+    subscriptionId,
+    activationCode: code
+  });
 }
 
 async function fetchStripeCheckoutSession(sessionId: string, env: Env): Promise<StripeCheckoutCompletedSession> {
@@ -216,6 +239,23 @@ async function fetchStripeCheckoutSession(sessionId: string, env: Env): Promise<
   if (!response.ok || "error" in payload) {
     const message = "error" in payload ? payload.error.message : "Stripe checkout lookup failed";
     throw httpError(502, message);
+  }
+  return payload;
+}
+
+async function fetchStripeSubscription(subscriptionId: string, env: Env): Promise<StripeSubscription | null> {
+  requireEnv(env.STRIPE_SECRET_KEY, "STRIPE_SECRET_KEY");
+  const params = new URLSearchParams();
+  params.append("expand[]", "default_payment_method");
+  const response = await fetch(`https://api.stripe.com/v1/subscriptions/${encodeURIComponent(subscriptionId)}?${params}`, {
+    headers: {
+      Authorization: `Bearer ${env.STRIPE_SECRET_KEY}`
+    }
+  });
+  const payload = (await response.json()) as StripeSubscription | StripeError;
+  if (!response.ok || "error" in payload) {
+    console.warn("Stripe subscription lookup failed", "error" in payload ? payload.error.message : response.status);
+    return null;
   }
   return payload;
 }
@@ -244,12 +284,59 @@ async function handleSubscriptionChanged(subscription: StripeSubscription, env: 
   await env.ACTIVATION_CODES.put(`code:${code}`, JSON.stringify(next));
 }
 
-async function parseJson(request: Request): Promise<{ plan?: string; code?: string }> {
+async function parseJson(request: Request): Promise<{ plan?: string; code?: string; email?: string }> {
   try {
     return await request.json();
   } catch {
     throw httpError(400, "Invalid JSON");
   }
+}
+
+async function getTrialEligibility(env: Env, identifiers: { email?: string; customerId?: string; paymentMethodFingerprint?: string }): Promise<TrialEligibility> {
+  const keys = await trialUsageKeys(identifiers);
+  for (const key of keys) {
+    const existing = await env.ACTIVATION_CODES.get(key);
+    if (existing) return { eligible: false, reason: key.split(":", 3).slice(0, 2).join(":") };
+  }
+  return { eligible: true };
+}
+
+async function recordTrialUsage(env: Env, usage: TrialUsageInput): Promise<void> {
+  const keys = await trialUsageKeys({
+    email: usage.email,
+    customerId: usage.customerId,
+    paymentMethodFingerprint: usage.paymentMethodFingerprint
+  });
+  if (!keys.length) return;
+
+  const now = Math.floor(Date.now() / 1000);
+  const record: TrialUsageRecord = {
+    checkoutSessionId: usage.checkoutSessionId,
+    stripeCustomerId: usage.customerId,
+    stripeSubscriptionId: usage.subscriptionId,
+    activationCode: usage.activationCode,
+    usedAt: now
+  };
+  await Promise.all(keys.map((key) => env.ACTIVATION_CODES.put(key, JSON.stringify(record))));
+}
+
+async function trialUsageKeys(identifiers: { email?: string; customerId?: string; paymentMethodFingerprint?: string }): Promise<string[]> {
+  const keys: string[] = [];
+  if (identifiers.email) keys.push(`trial:email:${await sha256Hex(identifiers.email)}`);
+  if (identifiers.customerId) keys.push(`trial:customer:${identifiers.customerId}`);
+  if (identifiers.paymentMethodFingerprint) keys.push(`trial:pm:${await sha256Hex(identifiers.paymentMethodFingerprint)}`);
+  return keys;
+}
+
+function normalizeEmail(value: string | undefined | null): string | undefined {
+  if (!value) return undefined;
+  const email = value.trim().toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : undefined;
+}
+
+function paymentMethodFingerprint(paymentMethod: StripePaymentMethod | string | null | undefined): string | undefined {
+  if (!paymentMethod || typeof paymentMethod === "string") return undefined;
+  return paymentMethod.card?.fingerprint;
 }
 
 function normalizeActivationCode(value: string | undefined): string {
@@ -327,6 +414,11 @@ function stringValue(value: string | { id?: string } | null | undefined): string
   return typeof value === "string" ? value : value.id;
 }
 
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return hex(new Uint8Array(digest));
+}
+
 function cryptoRandom(bytes: number): string {
   const data = new Uint8Array(bytes);
   crypto.getRandomValues(data);
@@ -374,6 +466,10 @@ interface StripeCheckoutCompletedSession {
   id: string;
   customer?: string | { id?: string } | null;
   subscription?: string | { id?: string } | null;
+  customer_email?: string | null;
+  customer_details?: {
+    email?: string | null;
+  } | null;
   metadata?: Record<string, string>;
   payment_status?: string;
   status?: string;
@@ -383,6 +479,14 @@ interface StripeSubscription {
   id: string;
   customer?: string | { id?: string } | null;
   status: string;
+  default_payment_method?: StripePaymentMethod | string | null;
+}
+
+interface StripePaymentMethod {
+  id?: string;
+  card?: {
+    fingerprint?: string;
+  };
 }
 
 interface ActivationCodeRecord {
@@ -390,6 +494,8 @@ interface ActivationCodeRecord {
   proxyToken?: string;
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
+  customerEmailHash?: string;
+  paymentMethodFingerprintHash?: string;
   createdAt?: number;
   updatedAt?: number;
 }
@@ -401,6 +507,28 @@ interface PremiumSessionRecord {
   stripeSubscriptionId?: string;
   createdAt: number;
   expiresAt: number;
+}
+
+interface TrialEligibility {
+  eligible: boolean;
+  reason?: string;
+}
+
+interface TrialUsageInput {
+  email?: string;
+  customerId?: string;
+  paymentMethodFingerprint?: string;
+  checkoutSessionId: string;
+  subscriptionId?: string;
+  activationCode: string;
+}
+
+interface TrialUsageRecord {
+  checkoutSessionId: string;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  activationCode: string;
+  usedAt: number;
 }
 
 interface KVNamespace {
