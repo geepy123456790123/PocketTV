@@ -9,7 +9,7 @@
                         grow="1"
                         tabBackgroundColor="#07080C"
                         tabItemActiveTextColor="#7DDCFF"
-                        defaultTab="2"
+                        defaultTab="0"
                         demandMode="false"
                         sidebarWidth="240"
                         sidebarPosition="left">
@@ -18,8 +18,7 @@
                                 style="inline"
                                 icon="@res/svg/setting_about.svg"
                                 iconActivate="@res/svg/setting_about_active.svg"
-                                fontSize="22"
-                                visibility="gone">
+                                fontSize="22">
                                 <brls:ScrollingFrame
                                         width="auto"
                                         height="auto"
@@ -32,8 +31,7 @@
                                 style="inline"
                                 icon="@res/svg/setting_tools.svg"
                                 iconActivate="@res/svg/setting_tools_active.svg"
-                                fontSize="22"
-                                visibility="gone">
+                                fontSize="22">
                                 <brls:ScrollingFrame
                                         width="auto"
                                         height="auto"
@@ -377,8 +375,7 @@
                                 style="inline"
                                 icon="@res/svg/setting_ui.svg"
                                 iconActivate="@res/svg/setting_ui_active.svg"
-                                fontSize="22"
-                                visibility="gone">
+                                fontSize="22">
                                 <brls:ScrollingFrame
                                         width="auto"
                                         height="auto"
@@ -477,8 +474,7 @@
                                 style="inline"
                                 icon="@res/svg/setting_others.svg"
                                 iconActivate="@res/svg/setting_others_active.svg"
-                                fontSize="22"
-                                visibility="gone">
+                                fontSize="22">
                                 <brls:ScrollingFrame
                                         width="auto"
                                         height="auto"
@@ -520,8 +516,7 @@
                                 style="inline"
                                 icon="@res/svg/setting_github.svg"
                                 iconActivate="@res/svg/setting_github_active.svg"
-                                fontSize="22"
-                                visibility="gone">
+                                fontSize="22">
                                 <brls:ScrollingFrame
                                         width="auto"
                                         height="auto"

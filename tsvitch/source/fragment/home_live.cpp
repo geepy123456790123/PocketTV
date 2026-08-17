@@ -335,9 +335,9 @@ const std::string LiveGuideRowCellXML = R"xml(
         </brls:Box>
     </brls:Box>
 
-    <brls:Label id="guide/slot0" width="247" height="46" marginLeft="6" paddingLeft="10" paddingRight="10" paddingTop="6" paddingBottom="6" fontSize="16" textColor="#F8FAFC" backgroundColor="#20232B" cornerRadius="8"/>
-    <brls:Label id="guide/slot1" width="247" height="46" marginLeft="6" paddingLeft="10" paddingRight="10" paddingTop="6" paddingBottom="6" fontSize="16" textColor="#F8FAFC" backgroundColor="#20232B" cornerRadius="8"/>
-    <brls:Label id="guide/slot2" width="247" height="46" marginLeft="6" paddingLeft="10" paddingRight="10" paddingTop="6" paddingBottom="6" fontSize="16" textColor="#F8FAFC" backgroundColor="#20232B" cornerRadius="8"/>
+    <brls:Label id="guide/slot0" width="247" height="46" marginLeft="6" fontSize="16" textColor="#F8FAFC" backgroundColor="#20232B" cornerRadius="8"/>
+    <brls:Label id="guide/slot1" width="247" height="46" marginLeft="6" fontSize="16" textColor="#F8FAFC" backgroundColor="#20232B" cornerRadius="8"/>
+    <brls:Label id="guide/slot2" width="247" height="46" marginLeft="6" fontSize="16" textColor="#F8FAFC" backgroundColor="#20232B" cornerRadius="8"/>
 </brls:Box>
 )xml";
 
