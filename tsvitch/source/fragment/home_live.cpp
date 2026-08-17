@@ -117,7 +117,7 @@ public:
 
     void setPrimary(bool primary) {
         this->primary = primary;
-        this->labelTitle->setFontSize(primary ? 19 : 17);
+        this->labelTitle->setFontSize(primary ? 21 : 17);
     }
 
     void prepareForReuse() override {
@@ -285,7 +285,6 @@ const std::string LiveGuideRowCellXML = R"xml(
         paddingTop="2"
         paddingBottom="2"
         alignItems="center"
-        backgroundColor="#15171C"
         highlightCornerRadius="12"
         cornerRadius="8">
 
@@ -336,9 +335,9 @@ const std::string LiveGuideRowCellXML = R"xml(
         </brls:Box>
     </brls:Box>
 
-    <brls:Label id="guide/slot0" width="247" height="46" marginLeft="6" fontSize="15" textColor="#F8FAFC" backgroundColor="#20232B" cornerRadius="8"/>
-    <brls:Label id="guide/slot1" width="247" height="46" marginLeft="6" fontSize="15" textColor="#F8FAFC" backgroundColor="#20232B" cornerRadius="8"/>
-    <brls:Label id="guide/slot2" width="247" height="46" marginLeft="6" fontSize="15" textColor="#F8FAFC" backgroundColor="#20232B" cornerRadius="8"/>
+    <brls:Label id="guide/slot0" width="247" height="46" marginLeft="6" paddingLeft="10" paddingRight="10" paddingTop="6" paddingBottom="6" fontSize="16" textColor="#F8FAFC" backgroundColor="#20232B" cornerRadius="8"/>
+    <brls:Label id="guide/slot1" width="247" height="46" marginLeft="6" paddingLeft="10" paddingRight="10" paddingTop="6" paddingBottom="6" fontSize="16" textColor="#F8FAFC" backgroundColor="#20232B" cornerRadius="8"/>
+    <brls:Label id="guide/slot2" width="247" height="46" marginLeft="6" paddingLeft="10" paddingRight="10" paddingTop="6" paddingBottom="6" fontSize="16" textColor="#F8FAFC" backgroundColor="#20232B" cornerRadius="8"/>
 </brls:Box>
 )xml";
 
@@ -349,13 +348,12 @@ const std::string LiveGuideSectionCellXML = R"xml(
         focusable="false"
         paddingLeft="12"
         paddingRight="12"
-        alignItems="center"
-        backgroundColor="#050608">
+        alignItems="center">
     <brls:Label
             id="guide/section/title"
             width="auto"
             height="auto"
-            fontSize="22"
+            fontSize="24"
             textColor="#F8FAFC"
             singleLine="true"/>
 </brls:Box>
