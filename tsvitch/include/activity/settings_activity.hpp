@@ -61,6 +61,7 @@ private:
     // Premium Controls
     BRLS_BIND(brls::InputCell, btnPremiumCode, "setting/iptv/premium_code");
     BRLS_BIND(brls::RadioCell, btnInstallForwarder, "setting/iptv/install_forwarder");
+    BRLS_BIND(brls::RadioCell, btnIPTVCheckUpdate, "setting/iptv/check_update");
     
     BRLS_BIND(TsVitchSelectorCell, selectorLang, "setting/language");
     BRLS_BIND(TsVitchSelectorCell, selectorTheme, "setting/ui/theme");

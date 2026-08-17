@@ -43,6 +43,10 @@ int main(int argc, char* argv[]) {
     }
 #endif
 
+#ifdef __SWITCH__
+    APPVersion::applyPendingUpdate();
+#endif
+
     ProgramConfig::instance().init();
 
 #ifdef __SWITCH__

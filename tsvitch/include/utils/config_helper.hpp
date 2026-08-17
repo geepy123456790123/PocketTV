@@ -113,6 +113,10 @@ public:
     bool needUpdate(std::string latestVersion);
 
     void checkUpdate(int delay = 2000, bool showUpToDateDialog = false);
+
+    void downloadUpdate(const std::string& url);
+
+    static void applyPendingUpdate();
 };
 
 class CustomTheme {

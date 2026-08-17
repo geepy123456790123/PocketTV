@@ -1,4 +1,6 @@
 #include <cstdlib>
+#include <cstdio>
+#include <fstream>
 #include <fmt/format.h>
 #include <cpr/cpr.h>
 #include <pystring.h>
@@ -17,6 +19,19 @@ using namespace brls::literals;
 
 #define STR_IMPL(x) #x
 #define STR(x) STR_IMPL(x)
+
+namespace {
+constexpr const char* POCKETTV_NRO_PATH = "/switch/PocketTV.nro";
+constexpr const char* POCKETTV_UPDATE_PATH = "/switch/PocketTV.nro.update";
+constexpr const char* POCKETTV_BACKUP_PATH = "/switch/PocketTV.nro.backup";
+
+std::string findSwitchNroAsset(const ReleaseNote& info) {
+    for (const auto& asset : info.assets) {
+        if (asset.name == "PocketTV.nro" && !asset.browser_download_url.empty()) return asset.browser_download_url;
+    }
+    return "https://github.com/geepy123456790123/PocketTV/releases/latest/download/PocketTV.nro";
+}
+}  // namespace
 
 APPVersion::APPVersion() {
     git_commit = std::string(STR(BUILD_TAG_SHORT));
@@ -116,6 +131,11 @@ void APPVersion::checkUpdate(int delay, bool showUpToDateDialog) {
                     brls::sync([info]() {
                         auto container = new LatestUpdate(info);
                         auto dialog    = new brls::Dialog((brls::Box*)container);
+                        const std::string downloadUrl = findSwitchNroAsset(info);
+                        dialog->addButton("Later", []() {});
+                        dialog->addButton("Download update", [downloadUrl]() {
+                            APPVersion::instance().downloadUpdate(downloadUrl);
+                        });
                         dialog->open();
                     });
                 } catch (const std::exception& e) {
@@ -124,4 +144,71 @@ void APPVersion::checkUpdate(int delay, bool showUpToDateDialog) {
             },
             tsvitch::HTTP::VERIFY, tsvitch::HTTP::PROXIES, cpr::Url{url}, cpr::Timeout{10000});
     });
+}
+
+void APPVersion::downloadUpdate(const std::string& url) {
+#ifndef __SWITCH__
+    brls::Application::notify("Automatic NRO updates are only available on Nintendo Switch");
+#else
+    if (url.empty()) {
+        brls::Application::notify("No PocketTV.nro asset found in the latest release");
+        return;
+    }
+
+    brls::Application::notify("Downloading PocketTV update...");
+    cpr::GetCallback(
+        [](cpr::Response r) {
+            if (r.status_code != 200 || r.text.empty()) {
+                brls::Logger::error("PocketTV update download failed: {} {}", r.status_code, r.error.message);
+                brls::sync([]() { brls::Application::notify("Update download failed"); });
+                return;
+            }
+
+            std::ofstream out(POCKETTV_UPDATE_PATH, std::ios::binary | std::ios::trunc);
+            if (!out) {
+                brls::sync([]() { brls::Application::notify("Cannot write update to /switch/PocketTV.nro.update"); });
+                return;
+            }
+            out.write(r.text.data(), (std::streamsize)r.text.size());
+            out.close();
+
+            if (!out) {
+                std::remove(POCKETTV_UPDATE_PATH);
+                brls::sync([]() { brls::Application::notify("Update write failed"); });
+                return;
+            }
+
+            brls::sync([]() {
+                auto* dialog = new brls::Dialog(
+                    "PocketTV update downloaded.\n\n"
+                    "Restart PocketTV to install it. The current app will be backed up as /switch/PocketTV.nro.backup.");
+                dialog->addButton("hints/ok"_i18n, []() {});
+                dialog->open();
+            });
+        },
+        tsvitch::HTTP::VERIFY, tsvitch::HTTP::PROXIES, cpr::Url{url}, cpr::Timeout{120000}, cpr::Redirect{true},
+        cpr::Header{{"User-Agent", "PocketTV-Updater"}});
+#endif
+}
+
+void APPVersion::applyPendingUpdate() {
+#ifdef __SWITCH__
+    std::ifstream pending(POCKETTV_UPDATE_PATH, std::ios::binary);
+    if (!pending.good()) return;
+    pending.close();
+
+    std::remove(POCKETTV_BACKUP_PATH);
+    if (std::rename(POCKETTV_NRO_PATH, POCKETTV_BACKUP_PATH) != 0) {
+        brls::Logger::error("Failed to back up current PocketTV NRO");
+        return;
+    }
+
+    if (std::rename(POCKETTV_UPDATE_PATH, POCKETTV_NRO_PATH) != 0) {
+        brls::Logger::error("Failed to apply pending PocketTV update");
+        std::rename(POCKETTV_BACKUP_PATH, POCKETTV_NRO_PATH);
+        return;
+    }
+
+    brls::Logger::info("Applied pending PocketTV update");
+#endif
 }

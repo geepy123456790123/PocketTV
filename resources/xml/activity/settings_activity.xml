@@ -248,6 +248,10 @@
                                                                 id="setting/iptv/install_forwarder"
                                                                 title="Install Home Screen Forwarder" />
 
+                                                        <brls:RadioCell
+                                                                id="setting/iptv/check_update"
+                                                                title="Check for PocketTV Updates" />
+
                                                         <brls:Label
                                                                 width="auto"
                                                                 height="auto"

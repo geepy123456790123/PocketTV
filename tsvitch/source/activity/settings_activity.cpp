@@ -671,6 +671,12 @@ void SettingsActivity::onContentAvailable() {
     btnInstallForwarder->setVisibility(brls::Visibility::GONE);
 #endif
 
+    btnIPTVCheckUpdate->registerClickAction([](...) -> bool {
+        brls::Application::notify("Checking for PocketTV updates...");
+        APPVersion::instance().checkUpdate(0, true);
+        return true;
+    });
+
     // Imposta la visibilità iniziale delle sezioni
     this->updateIPTVSectionVisibility();
 
