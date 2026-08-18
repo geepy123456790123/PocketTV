@@ -8,6 +8,8 @@ on:
 jobs:
   update-badge:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -70,11 +72,15 @@ jobs:
           # Crea un branch orfano per evitare conflitti con il contenuto esistente
           git checkout --orphan gh-pages-badges
           
+          # Salva il badge in /tmp prima di rimuovere tutti i file
+          mkdir -p /tmp/downloads-badge
+          cp badges/downloads.json /tmp/downloads-badge/downloads.json
+          
           # Rimuovi tutti i file dal working tree
           git rm -rf .
           
-          # Copia solo il file badge
-          cp badges/downloads.json downloads.json
+          # Ripristina il badge da /tmp
+          cp /tmp/downloads-badge/downloads.json downloads.json
           
           # Crea .nojekyll per disabilitare Jekyll
           touch .nojekyll
