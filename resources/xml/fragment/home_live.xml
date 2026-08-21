@@ -27,10 +27,24 @@
                         wireframe="false"
                         preFetchLine="2"
                         id="dynamic/up/recyclingGrid" />
-                <brls:Label
+                <CustomButton
+                        id="home/iptv-settings"
+                        height="32"
+                        width="40"
                         marginTop="8"
-                        fontSize="11"
-                        textColor="#AEB3C2"
+                        axis="row"
+                        focusable="true"
+                        justifyContent="center"
+                        alignItems="center"
+                        backgroundColor="#20232B"
+                        cornerRadius="8">
+                    <SVGImage
+                        width="20"
+                        height="20"
+                        SVG="@res/svg/ico-setting.svg" />
+                </CustomButton>
+                <brls:Label
+                        visibility="gone"
                         id="home/live/status"
                         text="" />
         </brls:Box>

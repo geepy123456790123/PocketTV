@@ -33,6 +33,8 @@ public:
 
     brls::View* getDefaultFocus() override;
 
+    brls::View* getNextFocus(brls::FocusDirection direction, brls::View* currentView) override;
+
     void draw(NVGcontext* vg, float x, float y, float width, float height, brls::Style style,
               brls::FrameContext* ctx) override;
 
@@ -62,6 +64,8 @@ private:
     void showInitialSetup();
     void hideInitialSetup();
     void showChannels(tsvitch::LiveM3u8ListResult channels);
+    brls::View* getFirstChannelFocus();
+    brls::View* getSelectedGroupFocus();
     void pageGuide(int direction);
     void updateGuideHeader();
     void verifyPremiumSubscriptionAndLoad();

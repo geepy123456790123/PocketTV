@@ -22,6 +22,7 @@
 #include "view/text_box.hpp"
 #include "view/selector_cell.hpp"
 #include "view/mpv_core.hpp"
+#include "view/auto_tab_frame.hpp"
 
 #ifdef BUILTIN_NSP
 #include "nspmini.hpp"
@@ -102,6 +103,10 @@ SettingsActivity::SettingsActivity(std::function<void()> onClose) : onCloseCallb
 
 void SettingsActivity::onContentAvailable() {
     brls::Logger::debug("SettingsActivity: onContentAvailable");
+
+    if (tabFrame && tabFrame->getSidebar()) {
+        tabFrame->getSidebar()->setVisibility(brls::Visibility::GONE);
+    }
 
 #ifdef __SWITCH__
     btnTutorialOpenApp->registerClickAction([](...) -> bool {

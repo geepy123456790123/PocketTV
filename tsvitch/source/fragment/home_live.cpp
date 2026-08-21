@@ -513,6 +513,13 @@ public:
 
     size_t getItemCount() override { return displayRows.size(); }
 
+    size_t getFirstChannelRowIndex() const {
+        for (size_t i = 0; i < displayRows.size(); ++i) {
+            if (!displayRows[i].section) return i;
+        }
+        return 0;
+    }
+
     void onItemSelected(RecyclingGrid* recycler, size_t index) override {
         if (index >= displayRows.size() || displayRows[index].section) return;
         HistoryManager::get()->add(displayRows[index].channel);
@@ -870,7 +877,7 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
             brls::Application::giveFocus(this->upRecyclingGrid->getDefaultFocus());
         }
     });
-    statusLabel->setText(fmt::format("{} channels - logos load as available", this->channelsList.size()));
+    statusLabel->setText("");
 
     if (firstLoad) {
         auto toSave = this->channelsList;
@@ -906,6 +913,14 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
             this->openLiveSettings();
             return true;
         });
+        this->iptvSettingsButton->setCustomNavigation([this](brls::FocusDirection direction) -> brls::View* {
+            if (direction == brls::FocusDirection::UP && this->upRecyclingGrid &&
+                this->upRecyclingGrid->getVisibility() == brls::Visibility::VISIBLE) {
+                return this->getSelectedGroupFocus();
+            }
+            if (direction == brls::FocusDirection::RIGHT) return this->getFirstChannelFocus();
+            return nullptr;
+        });
     }
 
     this->registerAction("hints/toggle_favorite"_i18n, brls::BUTTON_X, [this](...) {
@@ -928,7 +943,7 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
         return true;
     });
 
-    statusLabel->setText(fmt::format("{} channels - logos load as available", this->channelsList.size()));
+    statusLabel->setText("");
     return;
 }
 
@@ -940,6 +955,23 @@ brls::View* HomeLive::getDefaultFocus() {
         if (auto* focus = this->upRecyclingGrid->getDefaultFocus()) return focus;
     }
     return this->recyclingGrid ? this->recyclingGrid->getDefaultFocus() : nullptr;
+}
+
+brls::View* HomeLive::getNextFocus(brls::FocusDirection direction, brls::View* currentView) {
+    if (direction == brls::FocusDirection::RIGHT && this->upRecyclingGrid &&
+        this->upRecyclingGrid->getVisibility() == brls::Visibility::VISIBLE) {
+        for (auto* view = currentView; view; view = view->getParent()) {
+            if (view == this->upRecyclingGrid) return this->getFirstChannelFocus();
+        }
+    }
+
+    if (direction == brls::FocusDirection::LEFT && this->recyclingGrid) {
+        for (auto* view = currentView; view; view = view->getParent()) {
+            if (view == this->recyclingGrid) return this->getSelectedGroupFocus();
+        }
+    }
+
+    return AttachedView::getNextFocus(direction, currentView);
 }
 
 void HomeLive::selectGroupIndex(size_t index) {
@@ -975,7 +1007,28 @@ void HomeLive::showChannels(tsvitch::LiveM3u8ListResult channels) {
         return;
     }
     visibleChannels = channels;
-    recyclingGrid->setDataSource(new DataSourceLiveVideoList(channels, guideStart));
+    auto* source = new DataSourceLiveVideoList(channels, guideStart);
+    auto firstChannelIndex = source->getFirstChannelRowIndex();
+    recyclingGrid->setDefaultCellFocus(firstChannelIndex);
+    recyclingGrid->setDataSource(source);
+}
+
+brls::View* HomeLive::getFirstChannelFocus() {
+    if (!this->recyclingGrid || this->recyclingGrid->getVisibility() != brls::Visibility::VISIBLE) return nullptr;
+    auto* source = dynamic_cast<DataSourceLiveVideoList*>(this->recyclingGrid->getDataSource());
+    size_t index = source ? source->getFirstChannelRowIndex() : 0;
+    this->recyclingGrid->setDefaultCellFocus(index);
+    this->recyclingGrid->selectRowAt(index, false);
+    if (auto* item = this->recyclingGrid->getGridItemByIndex(index)) return item->getDefaultFocus();
+    return this->recyclingGrid->getDefaultFocus();
+}
+
+brls::View* HomeLive::getSelectedGroupFocus() {
+    if (!this->upRecyclingGrid || this->upRecyclingGrid->getVisibility() != brls::Visibility::VISIBLE) return nullptr;
+    this->upRecyclingGrid->setDefaultCellFocus(this->selectedGroupIndex);
+    this->upRecyclingGrid->selectRowAt(this->selectedGroupIndex, false);
+    if (auto* item = this->upRecyclingGrid->getGridItemByIndex(this->selectedGroupIndex)) return item->getDefaultFocus();
+    return this->upRecyclingGrid->getDefaultFocus();
 }
 
 void HomeLive::pageGuide(int direction) {

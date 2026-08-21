@@ -11,6 +11,7 @@ class Label;
 }  // namespace brls
 class TextBox;
 class TsVitchSelectorCell;
+class AutoTabFrame;
 
 class SettingsActivity : public brls::Activity {
 public:
@@ -28,6 +29,8 @@ private:
     std::function<void()> onCloseCallback;
     
     void updateIPTVSectionVisibility();
+
+    BRLS_BIND(AutoTabFrame, tabFrame, "setting/tabFrame");
     
     BRLS_BIND(brls::RadioCell, btnTutorialOpenApp, "tools/tutorial_open");
     BRLS_BIND(brls::RadioCell, btnTutorialError, "tools/tutorial_error");
