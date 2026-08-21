@@ -40,33 +40,10 @@
 
             <Tab label=""
                  fontSize="18"
-                 focusDown="main/setting"
                  icon="@res/svg/ico-history.svg"
                  iconActivate="@res/svg/ico-history-activate.svg">
                 <HomeHistory/>
             </Tab>
         </AutoTabFrame>
-        <brls:Box
-                wireframe="false"
-                width="1"
-                axis="column"
-                justifyContent="center"
-                alignItems="center"
-                positionType="absolute"
-                visibility="gone"
-                positionBottom="20">
-
-            <CustomButton
-                    id="main/setting"
-                    focusable="true"
-                    highlightCornerRadius="50"
-                    cornerRadius="50"
-                    wireframe="false">
-                <SVGImage
-                        width="48"
-                        height="48"
-                        SVG="@res/svg/ico-setting.svg"/>
-            </CustomButton>
-        </brls:Box>
     </brls:Box>
 </brls:AppletFrame>
