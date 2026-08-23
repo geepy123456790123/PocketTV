@@ -1044,7 +1044,7 @@ void HomeLive::showChannels(tsvitch::LiveM3u8ListResult channels) {
     }
     auto* source = new DataSourceLiveVideoList(channels, guideStart, sectionMode);
     auto firstChannelIndex = source->getFirstChannelRowIndex();
-    recyclingGrid->setDefaultCellFocus(firstChannelIndex);
+    recyclingGrid->setDefaultCellFocus(this->selectedGroupName == "All Channels" ? 0 : firstChannelIndex);
     recyclingGrid->setDataSource(source);
 }
 
