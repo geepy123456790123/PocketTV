@@ -33,7 +33,7 @@
                         width="40"
                         marginTop="8"
                         axis="row"
-                        focusable="false"
+                        focusable="true"
                         justifyContent="center"
                         alignItems="center"
                         backgroundColor="#20232B"
@@ -136,7 +136,7 @@
                                         paddingLeft="20"
                                         paddingRight="20"
                                         axis="row"
-                                        focusable="true"
+                                        focusable="false"
                                         alignItems="center"
                                         backgroundColor="#20232B"
                                         cornerRadius="8">
@@ -154,7 +154,7 @@
                                         paddingLeft="20"
                                         paddingRight="20"
                                         axis="row"
-                                        focusable="true"
+                                        focusable="false"
                                         alignItems="center"
                                         backgroundColor="#20232B"
                                         cornerRadius="8">
@@ -171,7 +171,7 @@
                                         paddingLeft="20"
                                         paddingRight="20"
                                         axis="row"
-                                        focusable="true"
+                                        focusable="false"
                                         alignItems="center"
                                         backgroundColor="#20232B"
                                         cornerRadius="8">

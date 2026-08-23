@@ -832,10 +832,13 @@ brls::View* AutoSidebarItem::createAttachedView() {
     this->attachedView->registerAction(
         "hints/back"_i18n, brls::BUTTON_B,
         [this](View* view) {
-            if (brls::Application::getInputType() == brls::InputType::TOUCH)
+            if (brls::Application::getInputType() == brls::InputType::TOUCH) {
                 this->dismiss();
-            else
+            } else if (this->getVisibility() == brls::Visibility::GONE || !this->isFocusable()) {
+                brls::Application::popActivity();
+            } else {
                 brls::Application::giveFocus(this);
+            }
             return true;
         },
         false, false, brls::SOUND_BACK);

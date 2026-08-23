@@ -1191,10 +1191,16 @@ void HomeLive::showInitialSetup() {
     recyclingGrid->setVisibility(brls::Visibility::GONE);
     upRecyclingGrid->setVisibility(brls::Visibility::GONE);
     if (setupPanel) setupPanel->setVisibility(brls::Visibility::VISIBLE);
+    if (setupM3uButton) setupM3uButton->setFocusable(true);
+    if (setupPremiumButton) setupPremiumButton->setFocusable(true);
+    if (setupForwarderButton) setupForwarderButton->setFocusable(true);
     if (setupM3uButton) brls::Application::giveFocus(setupM3uButton);
 }
 
 void HomeLive::hideInitialSetup() {
+    if (setupM3uButton) setupM3uButton->setFocusable(false);
+    if (setupPremiumButton) setupPremiumButton->setFocusable(false);
+    if (setupForwarderButton) setupForwarderButton->setFocusable(false);
     if (setupPanel) setupPanel->setVisibility(brls::Visibility::GONE);
     if (recyclingGrid) recyclingGrid->setVisibility(brls::Visibility::VISIBLE);
 }
