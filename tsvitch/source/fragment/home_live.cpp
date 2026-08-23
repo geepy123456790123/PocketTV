@@ -1127,11 +1127,9 @@ void HomeLive::verifyPremiumSubscriptionAndLoad() {
         ProgramConfig::instance().getSettingItem(SettingItem::PREMIUM_ACTIVATION_CODE, std::string{""}));
 
     if (code.size() != 8) {
-        statusLabel->setText("Enter your Premium activation code");
-        recyclingGrid->setEmpty("Premium activation required");
-        upRecyclingGrid->setVisibility(brls::Visibility::GONE);
-        hideInitialSetup();
-        this->openPremiumInfo();
+        this->showInitialSetup();
+        statusLabel->setText("PocketTV Premium activation required");
+        if (setupPremiumButton) brls::Application::giveFocus(setupPremiumButton);
         return;
     }
 
@@ -1176,12 +1174,10 @@ void HomeLive::verifyPremiumSubscriptionAndLoad() {
                 if (!errorMessage.empty()) {
                     ProgramConfig::instance().setSettingItem(SettingItem::PREMIUM_M3U_URL, std::string{""});
                     ProgramConfig::instance().setSettingItem(SettingItem::PREMIUM_EPG_URL, std::string{""});
-                    ProgramConfig::instance().setM3U8Url("");
-                    ProgramConfig::instance().setEpgUrl("");
                     ChannelManager::get()->remove();
-                    statusLabel->setText("PocketTV Premium unavailable");
-                    recyclingGrid->setError(errorMessage);
-                    upRecyclingGrid->setVisibility(brls::Visibility::GONE);
+                    this->showInitialSetup();
+                    statusLabel->setText(errorMessage);
+                    if (setupPremiumButton) brls::Application::giveFocus(setupPremiumButton);
                     return;
                 }
 
