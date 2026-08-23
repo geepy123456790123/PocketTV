@@ -106,6 +106,12 @@ void SettingsActivity::onContentAvailable() {
 
     if (tabFrame && tabFrame->getSidebar()) {
         tabFrame->getSidebar()->setVisibility(brls::Visibility::GONE);
+        tabFrame->getSidebar()->setWidth(0);
+        tabFrame->getSidebar()->setFocusable(false);
+        for (auto* child : tabFrame->getSidebar()->getChildren()) {
+            child->setVisibility(brls::Visibility::GONE);
+            child->setFocusable(false);
+        }
     }
 
 #ifdef __SWITCH__

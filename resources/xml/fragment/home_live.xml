@@ -33,7 +33,7 @@
                         width="40"
                         marginTop="8"
                         axis="row"
-                        focusable="true"
+                        focusable="false"
                         justifyContent="center"
                         alignItems="center"
                         backgroundColor="#20232B"
