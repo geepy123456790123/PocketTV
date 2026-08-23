@@ -241,50 +241,6 @@
 
                                                         </brls:Box>
 
-                                                </brls:Box>
-
-                                                <brls:Header
-                                                        width="auto"
-                                                        height="auto"
-                                                        title="Install"
-                                                        marginBottom="0px" />
-                                                <brls:Box
-                                                        width="100%"
-                                                        height="auto"
-                                                        axis="column"
-                                                        marginBottom="30px">
-
-                                                        <brls:RadioCell
-                                                                id="setting/iptv/install_forwarder"
-                                                                title="Install Home Screen Forwarder" />
-
-                                                        <brls:Label
-                                                                width="auto"
-                                                                height="auto"
-                                                                marginLeft="20px"
-                                                                marginTop="2px"
-                                                                marginBottom="18px"
-                                                                fontSize="15"
-                                                                textColor="#AEB3C2"
-                                                                text="Adds a full-application PocketTV launcher to the Switch HOME Menu. Keep PocketTV.nro at /switch/PocketTV.nro on your microSD card." />
-
-                                                        <brls:RadioCell
-                                                                id="setting/iptv/check_update"
-                                                                title="Check for PocketTV Updates" />
-
-                                                </brls:Box>
-
-                                                <brls:Header
-                                                        width="auto"
-                                                        height="auto"
-                                                        title="Advanced setup"
-                                                        marginBottom="0px" />
-                                                <brls:Box
-                                                        width="100%"
-                                                        height="auto"
-                                                        axis="column"
-                                                        marginBottom="30px">
-
                                                         <!-- M3U8 Section -->
                                                         <brls:Box
                                                                 id="setting/iptv/m3u8_section"
@@ -329,6 +285,37 @@
                                                                         title="Password" />
 
                                                         </brls:Box>
+
+                                                </brls:Box>
+
+                                                <brls:Header
+                                                        width="auto"
+                                                        height="auto"
+                                                        title="Install"
+                                                        marginBottom="0px" />
+                                                <brls:Box
+                                                        width="100%"
+                                                        height="auto"
+                                                        axis="column"
+                                                        marginBottom="30px">
+
+                                                        <brls:RadioCell
+                                                                id="setting/iptv/install_forwarder"
+                                                                title="Install Home Screen Forwarder" />
+
+                                                        <brls:Label
+                                                                width="auto"
+                                                                height="auto"
+                                                                marginLeft="20px"
+                                                                marginTop="2px"
+                                                                marginBottom="18px"
+                                                                fontSize="15"
+                                                                textColor="#AEB3C2"
+                                                                text="Adds a full-application PocketTV launcher to the Switch HOME Menu. Keep PocketTV.nro at /switch/PocketTV.nro on your microSD card." />
+
+                                                        <brls:RadioCell
+                                                                id="setting/iptv/check_update"
+                                                                title="Check for PocketTV Updates" />
 
                                                 </brls:Box>
 

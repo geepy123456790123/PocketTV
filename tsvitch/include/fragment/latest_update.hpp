@@ -76,5 +76,4 @@ private:
     BRLS_BIND(brls::Box, textbox, "latest/textbox");
     BRLS_BIND(brls::Box, topBox, "latest/top");
     BRLS_BIND(brls::Label, header, "latest/header");
-    BRLS_BIND(UserInfoView, author, "latest/author");
 };

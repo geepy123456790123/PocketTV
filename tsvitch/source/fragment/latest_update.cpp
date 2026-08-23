@@ -33,6 +33,11 @@ static inline size_t getHeaderSize(const std::string& text) {
 
 static inline bool isImage(const std::string& text) { return pystring::startswith(pystring::lstrip(text), "!["); }
 
+static inline bool containsUpdateHost(const std::string& text) {
+    return text.find("github.com") != std::string::npos ||
+           text.find("githubusercontent.com") != std::string::npos;
+}
+
 #define PARSE_IMAGE_DATA(index, name, def)               \
     if (data.size() > (index) && !data[index].empty()) { \
         try {                                            \
@@ -72,7 +77,8 @@ LatestUpdate::LatestUpdate(const ReleaseNote& info) {
     brls::Logger::debug("Fragment LatestUpdate: create");
 
     header->setText(info.name);
-    subtitle->setText(fmt::format("A new version has been released, your current version is: {}", APPVersion::instance().git_tag));  author->setUserInfo(info.author.avatar_url, info.author.login, info.published_at);
+    subtitle->setText(fmt::format("A new PocketTV version is available. Current version: {}",
+                                  APPVersion::instance().git_tag));
 
     SHOW_REACTION("👍", info.reactions.plus_one);
     SHOW_REACTION("😀", info.reactions.laugh);
@@ -86,6 +92,7 @@ LatestUpdate::LatestUpdate(const ReleaseNote& info) {
     auto content   = pystring::replace(info.body, "\r\n", "\n");
     auto lines     = pystring::split(content, "\n");
     for (auto& l : lines) {
+        if (containsUpdateHost(l)) continue;
         if (l.empty()) {
             auto space = new brls::Rectangle(nvgRGBA(0, 0, 0, 0));
             space->setHeight(20);
