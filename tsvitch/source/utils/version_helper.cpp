@@ -4,6 +4,8 @@
 #include <cstring>
 #include <fstream>
 #include <vector>
+#include <algorithm>
+#include <sys/stat.h>
 #include <fmt/format.h>
 #include <cpr/cpr.h>
 #include <pystring.h>
@@ -40,6 +42,64 @@ std::string findSwitchNroAsset(const ReleaseNote& info) {
 bool fileExists(const std::string& path) {
     std::ifstream file(path, std::ios::binary);
     return file.good();
+}
+
+bool copyFile(const std::string& from, const std::string& to) {
+    std::ifstream input(from, std::ios::binary);
+    if (!input) {
+        brls::Logger::error("Cannot open {} for reading: {}", from, std::strerror(errno));
+        return false;
+    }
+
+    std::ofstream output(to, std::ios::binary | std::ios::trunc);
+    if (!output) {
+        brls::Logger::error("Cannot open {} for writing: {}", to, std::strerror(errno));
+        return false;
+    }
+
+    output << input.rdbuf();
+    output.close();
+    input.close();
+
+    if (!output) {
+        brls::Logger::error("Failed while writing {}", to);
+        return false;
+    }
+
+    return true;
+}
+
+bool sameFileContents(const std::string& first, const std::string& second) {
+    std::ifstream a(first, std::ios::binary);
+    std::ifstream b(second, std::ios::binary);
+    if (!a || !b) return false;
+
+    constexpr std::size_t bufferSize = 64 * 1024;
+    std::vector<char> bufferA(bufferSize);
+    std::vector<char> bufferB(bufferSize);
+
+    while (a && b) {
+        a.read(bufferA.data(), (std::streamsize)bufferA.size());
+        b.read(bufferB.data(), (std::streamsize)bufferB.size());
+
+        const auto readA = a.gcount();
+        const auto readB = b.gcount();
+        if (readA != readB) return false;
+        if (readA == 0) break;
+        if (!std::equal(bufferA.begin(), bufferA.begin() + readA, bufferB.begin())) return false;
+    }
+
+    return true;
+}
+
+bool pathParentExists(const std::string& path) {
+    auto slash = path.find_last_of('/');
+    if (slash == std::string::npos) return true;
+    const std::string parent = path.substr(0, slash);
+    if (parent.empty()) return true;
+
+    struct stat info {};
+    return stat(parent.c_str(), &info) == 0 && (info.st_mode & S_IFDIR);
 }
 
 std::vector<std::string> getNroPathCandidates() {
@@ -251,22 +311,31 @@ void APPVersion::applyPendingUpdate() {
     if (updatePath.empty()) return;
 
     for (const auto& nroPath : getNroPathCandidates()) {
+        if (!pathParentExists(nroPath)) continue;
+
         const std::string backupPath = nroPath + ".backup";
         std::remove(backupPath.c_str());
 
-        if (std::rename(nroPath.c_str(), backupPath.c_str()) != 0) {
-            brls::Logger::error("Failed to back up current PocketTV NRO from {} to {}: {}", nroPath, backupPath,
-                                std::strerror(errno));
+        if (fileExists(nroPath)) {
+            if (!copyFile(nroPath, backupPath)) {
+                brls::Logger::error("Failed to back up current PocketTV NRO from {} to {}", nroPath, backupPath);
+                continue;
+            }
+        }
+
+        if (!copyFile(updatePath, nroPath)) {
+            brls::Logger::error("Failed to apply pending PocketTV update from {} to {}", updatePath, nroPath);
+            if (fileExists(backupPath)) copyFile(backupPath, nroPath);
             continue;
         }
 
-        if (std::rename(updatePath.c_str(), nroPath.c_str()) != 0) {
-            brls::Logger::error("Failed to apply pending PocketTV update from {} to {}: {}", updatePath, nroPath,
-                                std::strerror(errno));
-            std::rename(backupPath.c_str(), nroPath.c_str());
+        if (!sameFileContents(updatePath, nroPath)) {
+            brls::Logger::error("PocketTV update verification failed after copying {} to {}", updatePath, nroPath);
+            if (fileExists(backupPath)) copyFile(backupPath, nroPath);
             continue;
         }
 
+        std::remove(updatePath.c_str());
         brls::Logger::info("Applied pending PocketTV update from {} to {}", updatePath, nroPath);
         return;
     }
