@@ -60,6 +60,7 @@
 
                                                         <brls:InputCell
                                                                 id="setting/tools/proxy/input"
+                                                                focusable="false"
                                                         />
 
 
@@ -77,14 +78,17 @@
 
                                                         <brls:RadioCell
                                                                 id="tools/tutorial_open"
+                                                                focusable="false"
                                                                 title="@i18n/tsvitch/setting/tools/tutorial/open" />
 
                                                         <brls:RadioCell
                                                                 id="tools/tutorial_error"
+                                                                focusable="false"
                                                                 title="@i18n/tsvitch/setting/tools/tutorial/error" />
 
                                                         <brls:RadioCell
                                                                 id="tools/tutorial_font"
+                                                                focusable="false"
                                                                 title="@i18n/tsvitch/setting/tools/tutorial/font" />
 
                                                 </brls:Box>
@@ -101,14 +105,17 @@
 
                                                         <brls:RadioCell
                                                                 id="tools/network_checker"
+                                                                focusable="false"
                                                                 title="@i18n/tsvitch/setting/tools/test/net" />
 
                                                         <brls:RadioCell
                                                                 id="tools/proxy_test"
+                                                                focusable="false"
                                                                 title="@i18n/tsvitch/setting/tools/test/proxy" />
 
                                                         <brls:RadioCell
                                                                 id="tools/vibration_test"
+                                                                focusable="false"
                                                                 title="@i18n/tsvitch/setting/tools/test/vibration" />
 
                                                 </brls:Box>
@@ -120,13 +127,16 @@
 
                                                 <brls:RadioCell
                                                         id="tools/config_dir"
+                                                        focusable="false"
                                                         title="@i18n/tsvitch/setting/tools/others/config" />
 
                                                 <brls:RadioCell
-                                                        id="tools/release_checker" />
+                                                        id="tools/release_checker"
+                                                        focusable="false" />
 
                                                 <brls:RadioCell
                                                         id="tools/quit"
+                                                        focusable="false"
                                                         title="@i18n/hints/exit" />
                                         </brls:Box>
                                 </brls:ScrollingFrame>
@@ -358,13 +368,16 @@
                                                         marginBottom="30px">
 
                                                         <brls:BooleanCell
-                                                                id="setting/video/quality" />
+                                                                id="setting/video/quality"
+                                                                focusable="false" />
 
                                                         <brls:BooleanCell
-                                                                id="setting/video/hwdec" />
+                                                                id="setting/video/hwdec"
+                                                                focusable="false" />
 
                                                         <SelectorCell
-                                                                id="setting/video/inmemory" />
+                                                                id="setting/video/inmemory"
+                                                                focusable="false" />
 
                                                 </brls:Box>
 
@@ -404,22 +417,28 @@
                                                         marginBottom="30px">
 
                                                         <brls:BooleanCell
-                                                                id="cell/fullscreen" />
+                                                                id="cell/fullscreen"
+                                                                focusable="false" />
 
                                                         <SelectorCell
-                                                                id="cell/onTopMode" />
+                                                                id="cell/onTopMode"
+                                                                focusable="false" />
 
                                                         <SelectorCell
-                                                                id="setting/fps" />
+                                                                id="setting/fps"
+                                                                focusable="false" />
 
                                                         <SelectorCell
-                                                                id="setting/ui/theme" />
+                                                                id="setting/ui/theme"
+                                                                focusable="false" />
 
                                                         <SelectorCell
-                                                                id="setting/custom/theme" />
+                                                                id="setting/custom/theme"
+                                                                focusable="false" />
 
                                                         <SelectorCell
-                                                                id="setting/ui/scale" />
+                                                                id="setting/ui/scale"
+                                                                focusable="false" />
 
                                                 </brls:Box>
                                                 <brls:Header
@@ -434,16 +453,20 @@
                                                         marginBottom="30px">
 
                                                         <brls:BooleanCell
-                                                                id="cell/showBottomBar" />
+                                                                id="cell/showBottomBar"
+                                                                focusable="false" />
 
                                                         <brls:BooleanCell
-                                                                id="cell/showFPS" />
+                                                                id="cell/showFPS"
+                                                                focusable="false" />
 
                                                         <SelectorCell
-                                                                id="setting/keymap" />
+                                                                id="setting/keymap"
+                                                                focusable="false" />
 
                                                         <brls:BooleanCell
-                                                                id="setting/keymap_swap" />
+                                                                id="setting/keymap_swap"
+                                                                focusable="false" />
 
                                                 </brls:Box>
 
@@ -459,13 +482,16 @@
                                                         marginBottom="0px">
 
                                                         <brls:BooleanCell
-                                                                id="cell/gamepadVibration" />
+                                                                id="cell/gamepadVibration"
+                                                                focusable="false" />
 
                                                         <brls:BooleanCell
-                                                                id="setting/opencc" />
+                                                                id="setting/opencc"
+                                                                focusable="false" />
 
                                                         <SelectorCell
-                                                                id="setting/language" />
+                                                                id="setting/language"
+                                                                focusable="false" />
                                                 </brls:Box>
                                         </brls:Box>
                                 </brls:ScrollingFrame>
@@ -503,10 +529,12 @@
                                                         marginBottom="30px">
 
                                                         <SelectorCell
-                                                                id="setting/image/texture" />
+                                                                id="setting/image/texture"
+                                                                focusable="false" />
 
                                                         <SelectorCell
-                                                                id="setting/image/threads" />
+                                                                id="setting/image/threads"
+                                                                focusable="false" />
 
                                                 </brls:Box>
                                         </brls:Box>

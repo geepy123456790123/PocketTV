@@ -104,10 +104,6 @@ SettingsActivity::SettingsActivity(std::function<void()> onClose) : onCloseCallb
 void SettingsActivity::onContentAvailable() {
     brls::Logger::debug("SettingsActivity: onContentAvailable");
 
-    auto disableFocus = [](brls::View* view) {
-        if (view) view->setFocusable(false);
-    };
-
     if (tabFrame && tabFrame->getSidebar()) {
         tabFrame->getSidebar()->setVisibility(brls::Visibility::GONE);
         tabFrame->getSidebar()->setWidth(0);
@@ -117,45 +113,6 @@ void SettingsActivity::onContentAvailable() {
             child->setFocusable(false);
         }
     }
-
-    // PocketTV uses the settings activity as a single TV setup page. The old
-    // TsVitch tabs remain in XML for compatibility, but their controls should
-    // never be reachable from the focus chain.
-    disableFocus(btnTutorialOpenApp);
-    disableFocus(btnTutorialError);
-    disableFocus(btnTutorialFont);
-    disableFocus(btnNetworkChecker);
-    disableFocus(btnProxyTest);
-    disableFocus(btnReleaseChecker);
-    disableFocus(btnQuit);
-    disableFocus(btnOpenConfig);
-    disableFocus(btnVibrationTest);
-    disableFocus(btnTls);
-    disableFocus(btnProxy);
-    disableFocus(btnProxyInput);
-    disableFocus(selectorLang);
-    disableFocus(selectorTheme);
-    disableFocus(selectorCustomTheme);
-    disableFocus(selectorUIScale);
-    disableFocus(selectorTexture);
-    disableFocus(selectorThreads);
-    disableFocus(selectorKeymap);
-    disableFocus(btnKeymapSwap);
-    disableFocus(btnOpencc);
-    disableFocus(btnQuality);
-    disableFocus(btnHWDEC);
-    disableFocus(selectorInmemory);
-    disableFocus(selectorFormat);
-    disableFocus(selectorCodec);
-    disableFocus(selectorQuality);
-    disableFocus(selectorFPS);
-    disableFocus(cellShowBar);
-    disableFocus(cellShowFPS);
-    disableFocus(cellTvSearch);
-    disableFocus(cellTvOSD);
-    disableFocus(cellFullscreen);
-    disableFocus(cellOnTopMode);
-    disableFocus(cellVibration);
 
 #ifdef __SWITCH__
     btnTutorialOpenApp->registerClickAction([](...) -> bool {
