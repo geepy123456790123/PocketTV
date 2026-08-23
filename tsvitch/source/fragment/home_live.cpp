@@ -495,8 +495,17 @@ struct LiveGuideDisplayRow {
 
 class DataSourceLiveVideoList : public RecyclingGridDataSource {
 public:
-    explicit DataSourceLiveVideoList(const tsvitch::LiveM3u8ListResult& result, std::time_t guideStart = 0)
-        : videoList(result), guideStart(guideStart) {
+    enum class SectionMode {
+        AllChannels,
+        FavoritesOnly,
+        GroupOnly,
+    };
+
+    explicit DataSourceLiveVideoList(
+        const tsvitch::LiveM3u8ListResult& result,
+        std::time_t guideStart = 0,
+        SectionMode sectionMode = SectionMode::AllChannels)
+        : videoList(result), guideStart(guideStart), sectionMode(sectionMode) {
         this->buildRows();
     }
     RecyclingGridItem* cellForRow(RecyclingGrid* recycler, size_t index) override {
@@ -534,6 +543,22 @@ public:
 
 private:
     void buildRows() {
+        if (sectionMode == SectionMode::FavoritesOnly) {
+            tsvitch::LiveM3u8ListResult favorites = videoList;
+            sortChannelsAlphabetically(favorites);
+
+            displayRows.push_back({true, "Favorites", {}});
+            for (const auto& channel : favorites) addChannelRow(channel);
+            return;
+        }
+
+        if (sectionMode == SectionMode::GroupOnly) {
+            tsvitch::LiveM3u8ListResult channels = videoList;
+            sortChannelsAlphabetically(channels);
+            for (const auto& channel : channels) addChannelRow(channel);
+            return;
+        }
+
         tsvitch::LiveM3u8ListResult favorites;
         tsvitch::LiveM3u8ListResult allChannels;
 
@@ -565,6 +590,7 @@ private:
     std::vector<LiveGuideDisplayRow> displayRows;
     std::unordered_map<size_t, size_t> rowToPlayIndex;
     std::time_t guideStart = 0;
+    SectionMode sectionMode = SectionMode::AllChannels;
 };
 
 HomeLive::HomeLive() {
@@ -847,6 +873,7 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
 
     upRecyclingGrid->setVisibility(brls::Visibility::VISIBLE);
     auto* upList = new DataSourceUpList(groupTitles, [this](const std::string& group) {
+        this->selectedGroupName = group;
         tsvitch::LiveM3u8ListResult filtered;
         {
             std::lock_guard<std::mutex> lock(groupCacheMutex);
@@ -866,6 +893,7 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
     });
     upRecyclingGrid->setDataSource(upList);
     this->selectedGroupIndex = 1;
+    this->selectedGroupName = "All Channels";
     this->selectGroupIndex(1);
     upRecyclingGrid->setDefaultCellFocus(1);
     if (auto* focus = upRecyclingGrid->getDefaultFocus()) {
@@ -983,6 +1011,7 @@ void HomeLive::selectGroupIndex(size_t index) {
     upRecyclingGrid->selectRowAt(index, false);
 
     std::string selectedGroup = datasource->getGroupNameByIndex(index);
+    this->selectedGroupName = selectedGroup;
     tsvitch::LiveM3u8ListResult filtered;
     {
         std::lock_guard<std::mutex> lock(groupCacheMutex);
@@ -1007,7 +1036,13 @@ void HomeLive::showChannels(tsvitch::LiveM3u8ListResult channels) {
         return;
     }
     visibleChannels = channels;
-    auto* source = new DataSourceLiveVideoList(channels, guideStart);
+    auto sectionMode = DataSourceLiveVideoList::SectionMode::GroupOnly;
+    if (this->selectedGroupName == "Favorites") {
+        sectionMode = DataSourceLiveVideoList::SectionMode::FavoritesOnly;
+    } else if (this->selectedGroupName == "All Channels") {
+        sectionMode = DataSourceLiveVideoList::SectionMode::AllChannels;
+    }
+    auto* source = new DataSourceLiveVideoList(channels, guideStart, sectionMode);
     auto firstChannelIndex = source->getFirstChannelRowIndex();
     recyclingGrid->setDefaultCellFocus(firstChannelIndex);
     recyclingGrid->setDataSource(source);
@@ -1018,7 +1053,9 @@ brls::View* HomeLive::getFirstChannelFocus() {
     auto* source = dynamic_cast<DataSourceLiveVideoList*>(this->recyclingGrid->getDataSource());
     size_t index = source ? source->getFirstChannelRowIndex() : 0;
     this->recyclingGrid->setDefaultCellFocus(index);
-    this->recyclingGrid->selectRowAt(index, false);
+    if (this->selectedGroupName != "All Channels") {
+        this->recyclingGrid->selectRowAt(index, false);
+    }
     if (auto* item = this->recyclingGrid->getGridItemByIndex(index)) return item->getDefaultFocus();
     return this->recyclingGrid->getDefaultFocus();
 }

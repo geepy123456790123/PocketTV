@@ -71,6 +71,7 @@ private:
     void verifyPremiumSubscriptionAndLoad();
 
     int selectedGroupIndex = 0;
+    std::string selectedGroupName = "All Channels";
     std::time_t guideStart = 0;
     bool isSearchActive    = false;
     bool isInitialLoadInProgress = false;
