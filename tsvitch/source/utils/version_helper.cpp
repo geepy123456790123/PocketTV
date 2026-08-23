@@ -1,6 +1,9 @@
 #include <cstdlib>
 #include <cstdio>
+#include <cerrno>
+#include <cstring>
 #include <fstream>
+#include <vector>
 #include <fmt/format.h>
 #include <cpr/cpr.h>
 #include <pystring.h>
@@ -23,13 +26,54 @@ using namespace brls::literals;
 namespace {
 constexpr const char* POCKETTV_NRO_PATH = "/switch/PocketTV.nro";
 constexpr const char* POCKETTV_UPDATE_PATH = "/switch/PocketTV.nro.update";
-constexpr const char* POCKETTV_BACKUP_PATH = "/switch/PocketTV.nro.backup";
+constexpr const char* POCKETTV_SDMC_NRO_PATH = "sdmc:/switch/PocketTV.nro";
+
+std::string launchNroPath;
 
 std::string findSwitchNroAsset(const ReleaseNote& info) {
     for (const auto& asset : info.assets) {
         if (asset.name == "PocketTV.nro" && !asset.browser_download_url.empty()) return asset.browser_download_url;
     }
     return "https://github.com/geepy123456790123/PocketTV/releases/latest/download/PocketTV.nro";
+}
+
+bool fileExists(const std::string& path) {
+    std::ifstream file(path, std::ios::binary);
+    return file.good();
+}
+
+std::vector<std::string> getNroPathCandidates() {
+    std::vector<std::string> paths;
+    auto addPath = [&paths](const std::string& path) {
+        if (path.empty()) return;
+        for (const auto& existing : paths) {
+            if (existing == path) return;
+        }
+        paths.push_back(path);
+    };
+
+    addPath(launchNroPath);
+    if (launchNroPath.rfind("sdmc:", 0) == 0) addPath(launchNroPath.substr(5));
+    if (launchNroPath.rfind("/switch/", 0) == 0) addPath("sdmc:" + launchNroPath);
+    addPath(POCKETTV_NRO_PATH);
+    addPath(POCKETTV_SDMC_NRO_PATH);
+    return paths;
+}
+
+std::string getPreferredNroPath() {
+    auto paths = getNroPathCandidates();
+    return paths.empty() ? POCKETTV_NRO_PATH : paths.front();
+}
+
+std::string getPreferredUpdatePath() { return getPreferredNroPath() + ".update"; }
+
+std::string findPendingUpdatePath() {
+    for (const auto& nroPath : getNroPathCandidates()) {
+        auto updatePath = nroPath + ".update";
+        if (fileExists(updatePath)) return updatePath;
+    }
+    if (fileExists(POCKETTV_UPDATE_PATH)) return POCKETTV_UPDATE_PATH;
+    return "";
 }
 }  // namespace
 
@@ -156,24 +200,26 @@ void APPVersion::downloadUpdate(const std::string& url) {
     }
 
     brls::Application::notify("Downloading PocketTV update...");
+    const std::string updatePath = getPreferredUpdatePath();
     cpr::GetCallback(
-        [](cpr::Response r) {
+        [updatePath](cpr::Response r) {
             if (r.status_code != 200 || r.text.empty()) {
                 brls::Logger::error("PocketTV update download failed: {} {}", r.status_code, r.error.message);
                 brls::sync([]() { brls::Application::notify("Update download failed"); });
                 return;
             }
 
-            std::ofstream out(POCKETTV_UPDATE_PATH, std::ios::binary | std::ios::trunc);
+            std::ofstream out(updatePath, std::ios::binary | std::ios::trunc);
             if (!out) {
-                brls::sync([]() { brls::Application::notify("Cannot write update to /switch/PocketTV.nro.update"); });
+                brls::Logger::error("Cannot write PocketTV update to {}", updatePath);
+                brls::sync([updatePath]() { brls::Application::notify("Cannot write update to " + updatePath); });
                 return;
             }
             out.write(r.text.data(), (std::streamsize)r.text.size());
             out.close();
 
             if (!out) {
-                std::remove(POCKETTV_UPDATE_PATH);
+                std::remove(updatePath.c_str());
                 brls::sync([]() { brls::Application::notify("Update write failed"); });
                 return;
             }
@@ -191,24 +237,41 @@ void APPVersion::downloadUpdate(const std::string& url) {
 #endif
 }
 
+void APPVersion::setExecutablePath(const char* path) {
+#ifdef __SWITCH__
+    launchNroPath = path ? path : "";
+#else
+    (void)path;
+#endif
+}
+
 void APPVersion::applyPendingUpdate() {
 #ifdef __SWITCH__
-    std::ifstream pending(POCKETTV_UPDATE_PATH, std::ios::binary);
-    if (!pending.good()) return;
-    pending.close();
+    const std::string updatePath = findPendingUpdatePath();
+    if (updatePath.empty()) return;
 
-    std::remove(POCKETTV_BACKUP_PATH);
-    if (std::rename(POCKETTV_NRO_PATH, POCKETTV_BACKUP_PATH) != 0) {
-        brls::Logger::error("Failed to back up current PocketTV NRO");
+    for (const auto& nroPath : getNroPathCandidates()) {
+        const std::string backupPath = nroPath + ".backup";
+        std::remove(backupPath.c_str());
+
+        if (std::rename(nroPath.c_str(), backupPath.c_str()) != 0) {
+            brls::Logger::error("Failed to back up current PocketTV NRO from {} to {}: {}", nroPath, backupPath,
+                                std::strerror(errno));
+            continue;
+        }
+
+        if (std::rename(updatePath.c_str(), nroPath.c_str()) != 0) {
+            brls::Logger::error("Failed to apply pending PocketTV update from {} to {}: {}", updatePath, nroPath,
+                                std::strerror(errno));
+            std::rename(backupPath.c_str(), nroPath.c_str());
+            continue;
+        }
+
+        brls::Logger::info("Applied pending PocketTV update from {} to {}", updatePath, nroPath);
         return;
     }
 
-    if (std::rename(POCKETTV_UPDATE_PATH, POCKETTV_NRO_PATH) != 0) {
-        brls::Logger::error("Failed to apply pending PocketTV update");
-        std::rename(POCKETTV_BACKUP_PATH, POCKETTV_NRO_PATH);
-        return;
-    }
-
-    brls::Logger::info("Applied pending PocketTV update");
+    brls::Logger::error("Pending PocketTV update exists at {}, but no launchable NRO path could be replaced",
+                        updatePath);
 #endif
 }

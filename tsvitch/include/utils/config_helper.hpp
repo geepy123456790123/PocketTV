@@ -116,6 +116,8 @@ public:
 
     void downloadUpdate(const std::string& url);
 
+    static void setExecutablePath(const char* path);
+
     static void applyPendingUpdate();
 };
 
