@@ -129,24 +129,6 @@
                                         horizontalAlign="center"
                                         text="Choose how you want to watch live TV. PocketTV does not include a playlist unless you add one or sign in to a licensed service." />
                                 <CustomButton
-                                        id="home/live/setup/m3u"
-                                        width="560"
-                                        height="58"
-                                        marginBottom="10"
-                                        paddingLeft="20"
-                                        paddingRight="20"
-                                        axis="row"
-                                        focusable="false"
-                                        alignItems="center"
-                                        backgroundColor="#20232B"
-                                        cornerRadius="8">
-                                        <brls:Label
-                                                width="100%"
-                                                fontSize="18"
-                                                textColor="#F8FAFC"
-                                                text="Bring your own M3U / EPG" />
-                                </CustomButton>
-                                <CustomButton
                                         id="home/live/setup/premium"
                                         width="560"
                                         height="58"
@@ -162,7 +144,25 @@
                                                 width="100%"
                                                 fontSize="18"
                                                 textColor="#F8FAFC"
-                                                text="Subscribe to PocketTV Premium" />
+                                                text="Get PocketTV Premium" />
+                                </CustomButton>
+                                <CustomButton
+                                        id="home/live/setup/m3u"
+                                        width="560"
+                                        height="58"
+                                        marginBottom="10"
+                                        paddingLeft="20"
+                                        paddingRight="20"
+                                        axis="row"
+                                        focusable="false"
+                                        alignItems="center"
+                                        backgroundColor="#20232B"
+                                        cornerRadius="8">
+                                        <brls:Label
+                                                width="100%"
+                                                fontSize="18"
+                                                textColor="#F8FAFC"
+                                                text="Bring your own M3U/EPG" />
                                 </CustomButton>
                                 <CustomButton
                                         id="home/live/setup/forwarder"
@@ -179,7 +179,7 @@
                                                 width="100%"
                                                 fontSize="18"
                                                 textColor="#F8FAFC"
-                                                text="Add PocketTV to the Switch home screen" />
+                                                text="Bring your own Xtream" />
                                 </CustomButton>
                         </brls:Box>
                         <RecyclingGrid

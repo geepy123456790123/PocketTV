@@ -6,6 +6,7 @@
 #include <sstream>
 #include <unordered_map>
 #include <cpr/cpr.h>
+#include <pystring.h>
 #include <nlohmann/json.hpp>
 #include <borealis/core/touch/tap_gesture.hpp>
 #include <borealis/views/dialog.hpp>
@@ -61,6 +62,11 @@ std::string formatGuideHeaderTime(std::time_t value) {
     int hour = local.tm_hour % 12;
     if (hour == 0) hour = 12;
     return fmt::format("{}:{:02d}{}", hour, local.tm_min, local.tm_hour < 12 ? "am" : "pm");
+}
+
+bool hasConfiguredM3uUrl() {
+    return !pystring::strip(ProgramConfig::instance().getSettingItem(SettingItem::M3U8_URL_ITEM, std::string{""}))
+                .empty();
 }
 
 std::string programmeText(const tsvitch::EpgProgramme& programme, std::time_t slotStart, std::time_t slotStop) {
@@ -622,6 +628,7 @@ HomeLive::HomeLive() {
 
     if (this->setupM3uButton) {
         this->setupM3uButton->registerClickAction([this](...) -> bool {
+            ProgramConfig::instance().setSettingItem(SettingItem::IPTV_MODE, 0);
             this->openLiveSettings();
             return true;
         });
@@ -635,7 +642,8 @@ HomeLive::HomeLive() {
     }
     if (this->setupForwarderButton) {
         this->setupForwarderButton->registerClickAction([this](...) -> bool {
-            this->installForwarder();
+            ProgramConfig::instance().setSettingItem(SettingItem::IPTV_MODE, 1);
+            this->openLiveSettings();
             return true;
         });
     }
@@ -793,7 +801,7 @@ HomeLive::HomeLive() {
                     brls::Logger::info("HomeLive constructor: Using valid M3U8 cache ({} channels found)", cachedChannels.size());
                     statusLabel->setText(fmt::format("Loaded {} cached channels", cachedChannels.size()));
                     this->onLiveList(cachedChannels, false);
-                } else if (ProgramConfig::instance().getM3U8Url().empty()) {
+                } else if (!hasConfiguredM3uUrl()) {
                     brls::Logger::info("HomeLive constructor: no M3U8 URL configured");
                     this->showInitialSetup();
                 } else {
@@ -976,8 +984,9 @@ void HomeLive::onLiveList(tsvitch::LiveM3u8ListResult result, bool firstLoad) {
 }
 
 brls::View* HomeLive::getDefaultFocus() {
-    if (this->setupPanel && this->setupPanel->getVisibility() == brls::Visibility::VISIBLE && this->setupM3uButton) {
-        return this->setupM3uButton;
+    if (this->setupPanel && this->setupPanel->getVisibility() == brls::Visibility::VISIBLE) {
+        if (this->setupPremiumButton) return this->setupPremiumButton;
+        if (this->setupM3uButton) return this->setupM3uButton;
     }
     if (this->upRecyclingGrid && this->upRecyclingGrid->getVisibility() == brls::Visibility::VISIBLE) {
         if (auto* focus = this->upRecyclingGrid->getDefaultFocus()) return focus;
@@ -1227,7 +1236,10 @@ void HomeLive::showInitialSetup() {
     if (setupM3uButton) setupM3uButton->setFocusable(true);
     if (setupPremiumButton) setupPremiumButton->setFocusable(true);
     if (setupForwarderButton) setupForwarderButton->setFocusable(true);
-    if (setupM3uButton) brls::Application::giveFocus(setupM3uButton);
+    if (setupPremiumButton)
+        brls::Application::giveFocus(setupPremiumButton);
+    else if (setupM3uButton)
+        brls::Application::giveFocus(setupM3uButton);
 }
 
 void HomeLive::hideInitialSetup() {
@@ -1362,8 +1374,7 @@ void HomeLive::onShow() {
             } else if (!cachedChannels.empty()) {
                 brls::Logger::info("HomeLive onShow: Using valid cached channels ({} channels)", cachedChannels.size());
                 this->onLiveList(cachedChannels, false);
-            } else if (ProgramConfig::instance().getSettingItem(SettingItem::IPTV_MODE, 0) == 0 &&
-                       ProgramConfig::instance().getM3U8Url().empty()) {
+            } else if (ProgramConfig::instance().getSettingItem(SettingItem::IPTV_MODE, 0) == 0 && !hasConfiguredM3uUrl()) {
                 brls::Logger::info("HomeLive onShow: no M3U8 URL configured");
                 this->statusLabel->setText("PocketTV setup required");
                 this->showInitialSetup();
