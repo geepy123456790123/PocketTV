@@ -45,7 +45,6 @@ int main(int argc, char* argv[]) {
 
 #ifdef __SWITCH__
     APPVersion::setExecutablePath(argc > 0 ? argv[0] : nullptr);
-    APPVersion::applyPendingUpdate();
 #endif
 
     ProgramConfig::instance().init();

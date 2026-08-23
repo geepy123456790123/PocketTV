@@ -287,7 +287,8 @@ void APPVersion::downloadUpdate(const std::string& url) {
             brls::sync([]() {
                 auto* dialog = new brls::Dialog(
                     "PocketTV update downloaded.\n\n"
-                    "Restart PocketTV to install it. The current app will be backed up as /switch/PocketTV.nro.backup.");
+                    "Automatic self-install is disabled for now to protect the launchable app.\n\n"
+                    "To install it, close PocketTV and rename /switch/PocketTV.nro.update to /switch/PocketTV.nro from your computer or file manager.");
                 dialog->addButton("hints/ok"_i18n, []() {});
                 dialog->open();
             });
