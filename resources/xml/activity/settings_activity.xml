@@ -299,19 +299,34 @@
                                                         axis="column"
                                                         marginBottom="30px">
 
-                                                        <brls:RadioCell
+                                                        <brls:Box
                                                                 id="setting/iptv/install_forwarder"
-                                                                title="Install Home Screen Forwarder" />
+                                                                width="100%"
+                                                                height="86px"
+                                                                focusable="true"
+                                                                axis="column"
+                                                                justifyContent="center"
+                                                                paddingTop="12px"
+                                                                paddingBottom="12px"
+                                                                paddingLeft="@style/brls/listitem/descriptionIndent"
+                                                                paddingRight="@style/brls/listitem/descriptionIndent">
 
-                                                        <brls:Label
-                                                                width="auto"
-                                                                height="auto"
-                                                                marginLeft="20px"
-                                                                marginTop="2px"
-                                                                marginBottom="18px"
-                                                                fontSize="15"
-                                                                textColor="#AEB3C2"
-                                                                text="Adds a full-application PocketTV launcher to the Switch HOME Menu. Keep PocketTV.nro at /switch/PocketTV.nro on your microSD card." />
+                                                                <brls:Label
+                                                                        width="auto"
+                                                                        height="auto"
+                                                                        fontSize="@style/brls/sidebar/item_font_size"
+                                                                        textColor="#F8FAFC"
+                                                                        text="Install Home Screen Forwarder" />
+
+                                                                <brls:Label
+                                                                        width="100%"
+                                                                        height="auto"
+                                                                        marginTop="5px"
+                                                                        fontSize="15"
+                                                                        textColor="#AEB3C2"
+                                                                        text="Adds a full-application PocketTV launcher to the Switch HOME Menu. Keep PocketTV.nro at /switch/PocketTV.nro on your microSD card." />
+
+                                                        </brls:Box>
 
                                                         <brls:RadioCell
                                                                 id="setting/iptv/check_update"
