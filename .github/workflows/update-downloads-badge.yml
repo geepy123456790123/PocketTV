@@ -12,7 +12,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install bc calculator
         run: sudo apt-get update && sudo apt-get install -y bc
@@ -20,13 +20,19 @@ jobs:
       - name: Get GitHub downloads
         id: github-downloads
         run: |
-          GITHUB_DOWNLOADS=$(curl -s "https://api.github.com/repos/giovannimirulla/TsVitch/releases" | jq '[.[].assets[].download_count] | add // 0')
+          GITHUB_DOWNLOADS=$(curl -fsSL \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/releases" \
+            | jq '[.[].assets[].download_count] | add // 0' \
+            || echo 0)
           echo "github_downloads=$GITHUB_DOWNLOADS" >> $GITHUB_OUTPUT
 
       - name: Get Homebrew Store downloads
         id: homebrew-downloads
         run: |
-          HOMEBREW_DOWNLOADS=$(curl -s "https://switch.cdn.fortheusers.org/repo.json" | jq '.packages | map(select(.name == "TsVitch"))[0].app_dls // 0')
+          HOMEBREW_DOWNLOADS=$(curl -fsSL "https://switch.cdn.fortheusers.org/repo.json" \
+            | jq '.packages | map(select(.name == "PocketTV" or .name == "Pocket TV"))[0].app_dls // 0' \
+            || echo 0)
           echo "homebrew_downloads=$HOMEBREW_DOWNLOADS" >> $GITHUB_OUTPUT
 
       - name: Calculate total downloads
